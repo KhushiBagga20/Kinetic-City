@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-fixed: #c0f18e;
+  --color-surface: #00161b;
+  --color-surface-bright: #152e34;
+  --color-surface-container-low: rgba(255, 255, 255, 0.03);
+  --color-surface-container: rgba(255, 255, 255, 0.05);
+  --color-surface-container-high: rgba(255, 255, 255, 0.1);
+  --color-surface-container-highest: rgba(255, 255, 255, 0.15);
+  --color-on-surface: #ffffff;
+  --color-on-surface-variant: rgba(255, 255, 255, 0.65);
+
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --font-mono: 'Inter', monospace;
+}
+
+/* Reset: ensure full-bleed dark background everywhere */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #00161b;
+  scroll-behavior: auto; /* let Lenis handle scroll */
+}
+
+body {
+  background-color: #00161b;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: #00161b;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', sans-serif;
+  color: #ffffff;
+  line-height: 1;
+}
+
+/* Utility classes */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(192, 241, 142, 0.4);
+}
+
+.box-glow {
+  box-shadow: 0 0 20px rgba(192, 241, 142, 0.2);
+}
+
+.box-glow:hover {
+  box-shadow: 0 0 30px rgba(192, 241, 142, 0.35);
+}
