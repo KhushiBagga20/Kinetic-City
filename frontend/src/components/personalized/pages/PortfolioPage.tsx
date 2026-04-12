@@ -146,6 +146,7 @@ function GuestState() {
   const setUserId = useAppStore(s => s.setUserId)
 
   const [mode, setMode] = useState<'signup' | 'signin'>('signup')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -157,16 +158,16 @@ function GuestState() {
     setLoading(true)
     setError('')
     try {
-      const name = userName || email.split('@')[0]
+      const displayName = name.trim() || email.split('@')[0]
       const res = await postCreateUser({
-        name,
+        name: displayName,
         email,
         fear_type: fearType,
         metaphor_style: metaphorStyle,
         password,
       })
       if (res.success) {
-        setUserProfile(name, email, '')
+        setUserProfile(displayName, email, '')
         setUserId(res.user_id)
         useAppStore.setState({ isAuthenticated: true })
       } else {
@@ -227,6 +228,20 @@ function GuestState() {
           style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
         >
           <div className="space-y-4">
+            {/* Name field — signup only */}
+            {mode === 'signup' && (
+              <div>
+                <label className="font-sans text-[10px] text-white/25 uppercase tracking-wider block mb-1.5">Your name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="What should we call you?"
+                  className="w-full bg-transparent border rounded-xl px-4 py-3 font-sans text-sm text-white outline-none placeholder:text-white/15 focus:border-[rgba(192,241,142,0.25)] transition-[border-color] duration-200"
+                  style={{ borderColor: 'var(--border)' }}
+                />
+              </div>
+            )}
             <div>
               <label className="font-sans text-[10px] text-white/25 uppercase tracking-wider block mb-1.5">Email</label>
               <input
@@ -308,7 +323,8 @@ function GuestState() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function SetupState() {
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const monthlyAmount = useAppStore(s => s.monthlyAmount)
   const setMonthlyAmount = useAppStore(s => s.setMonthlyAmount)
   const setSelectedFund = useAppStore(s => s.setSelectedFund)
@@ -324,7 +340,7 @@ function SetupState() {
   const [confirmed, setConfirmed] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
-  const firstName = userName.split(' ')[0]
+  const firstName = userName || 'your'
 
   const handleConfirm = () => {
     setConfirming(true)
@@ -352,7 +368,7 @@ function SetupState() {
 
   return (
     <motion.div {...PAGE_TRANSITION} key="setup" className="max-w-2xl mx-auto py-8">
-      <h1 className="font-display font-semibold text-3xl text-white tracking-tight mb-2">Welcome, {firstName}.</h1>
+      <h1 className="font-display font-semibold text-3xl text-white tracking-tight mb-2">{userName ? `Welcome, ${userName}.` : 'Welcome.'}</h1>
 
       {/* overlay blur when flow is open */}
       {flowOpen && !confirmed && (
@@ -595,7 +611,8 @@ function SetupState() {
 
 function ActivePortfolio() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const monthlyAmount = useAppStore(s => s.monthlyAmount)
   const selectedFund = useAppStore(s => s.selectedFund) || 'Nifty 50 Index Fund'
   const portfolioSetupDate = useAppStore(s => s.portfolioSetupDate)
@@ -715,7 +732,7 @@ function ActivePortfolio() {
     <motion.div {...PAGE_TRANSITION} key="active" className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-display font-semibold text-2xl text-white tracking-tight mb-1">{userName}'s Portfolio</h1>
+        <h1 className="font-display font-semibold text-2xl text-white tracking-tight mb-1">{userName ? `${userName}'s Portfolio` : 'Your Portfolio'}</h1>
         <p className="font-sans text-xs text-white/30">Simulated performance · Based on {selectedFund} historical data</p>
       </div>
 

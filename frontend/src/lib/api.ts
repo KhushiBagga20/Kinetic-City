@@ -149,3 +149,11 @@ export async function postHarvestDebrief(data: {
 }): Promise<{ insights: string }> {
   return post('/api/harvest-debrief', data)
 }
+
+export async function postFearQuote(data: {
+  fear_type: string
+  user_name?: string
+  context?: string
+}): Promise<{ quote: string }> {
+  return post('/api/fear-quote', data)
+}

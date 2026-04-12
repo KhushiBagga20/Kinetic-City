@@ -360,7 +360,7 @@ export default function MarketingLanding() {
 
 
   return (
-    <div className="min-h-screen text-white" style={{ background: '#00161b' }}>
+    <div className="min-h-screen text-white overflow-x-hidden" style={{ background: '#00161b' }}>
 
       {/* ── NAVBAR ──────────────────────────────────────────────────── */}
       <nav
@@ -393,19 +393,10 @@ export default function MarketingLanding() {
       {/* ── HERO — Kinetic City ────────────────────────────────────── */}
       <KineticCity onStart={handleStart} />
 
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 0.4 }}
-        transition={{ delay: 4.5, duration: 1 }}
-        className="flex flex-col items-center gap-1 py-6"
-      >
-        <div className="w-px h-10 rounded-full" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.3), transparent)' }} />
-        <p className="font-sans text-[9px] tracking-widest text-white/30 uppercase">Scroll</p>
-      </motion.div>
-
       {/* ── SECTION 1: THE PROBLEM ──────────────────────────────────── */}
-      <section className="py-28 px-6 md:px-10 max-w-[1100px] mx-auto">
-        <FadeIn from="left" className="mb-16">
+      <section style={{ marginTop: 0, paddingTop: '80px', paddingBottom: '80px', background: 'var(--bg)', width: '100%' }}>
+        <div className="px-6 md:px-10 max-w-[1100px] mx-auto">
+          <FadeIn from="left" className="mb-16">
           <h2 className="font-display font-bold text-3xl md:text-5xl text-white leading-tight">
             Your money is shrinking.<br />
             <span style={{ color: 'var(--accent)' }}>You just can't see it.</span>
@@ -428,11 +419,12 @@ export default function MarketingLanding() {
           ))}
         </div>
 
-        <FadeIn>
-          <p className="font-display font-medium text-xl md:text-2xl text-center text-white/60">
-            The problem isn't the market. It's the <span className="text-white">fear of it.</span>
-          </p>
-        </FadeIn>
+          <FadeIn>
+            <p className="font-display font-medium text-xl md:text-2xl text-center text-white/60">
+              The problem isn't the market. It's the <span className="text-white">fear of it.</span>
+            </p>
+          </FadeIn>
+        </div>
       </section>
 
       {/* ── SECTION 2: FEAR TYPES ───────────────────────────────────── */}

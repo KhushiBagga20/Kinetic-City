@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { Shield, Search, Fingerprint, Unlock, ChevronDown, RefreshCcw, Zap } from 'lucide-react'
+import FearQuote from '../shared/FearQuote'
 
 // ── Fear Type Data ──────────────────────────────────────────────────────────
 
@@ -81,6 +82,8 @@ const FEAR_TYPES: FearTypeInfo[] = [
 export default function FearProfilePage() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const setFearProfile = useAppStore(s => s.setFearProfile)
+  const rawName = useAppStore(s => s.userName)
+  const firstName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const navigate = useNavigate()
 
   const [expandedTypes, setExpandedTypes] = useState<Set<FearType>>(new Set([fearType]))
@@ -127,12 +130,15 @@ export default function FearProfilePage() {
         className="mb-10"
       >
         <h1 className="font-display font-bold text-3xl md:text-4xl text-white tracking-tight mb-3">
-          Your Fear Profile
+          {firstName ? `${firstName}'s Fear Profile` : 'Your Fear Profile'}
         </h1>
         <p className="font-sans text-sm text-white/40 max-w-lg leading-relaxed">
           Fear isn't a flaw — it's a signal. Understanding yours is the first step toward making it work for you instead of against you.
         </p>
       </motion.div>
+
+      {/* AI personalised quote */}
+      <FearQuote context="profile" variant="card" className="mb-6" />
 
       {/* Fear Type Sections */}
       <div className="space-y-4 mb-8">

@@ -59,7 +59,8 @@ export default function PersonalizedDashboard() {
   const dashboardSection = useAppStore(s => s.dashboardSection)
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const userName = useAppStore(s => s.userName) || ''
+  const displayName = userName && userName !== 'Explorer' ? userName.split(' ')[0] : ''
   const streakDays = useAppStore(s => s.streakDays)
   const updateStreak = useAppStore(s => s.updateStreak)
 
@@ -152,9 +153,9 @@ export default function PersonalizedDashboard() {
                   >
                     <div className="w-6 h-6 rounded-full flex items-center justify-center font-display font-bold text-[11px]"
                       style={{ background: `${FEAR_COLORS[fearType]}18`, color: FEAR_COLORS[fearType] }}>
-                      {userName.charAt(0).toUpperCase()}
+                      {(displayName || 'K').charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-sans text-xs text-white/50">{userName}</span>
+                    <span className="font-sans text-xs text-white/50">{displayName || FEAR_NAMES[fearType]}</span>
                     <ChevronDown className={`w-3 h-3 text-white/25 transition-transform duration-200 ${profileDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -235,10 +236,10 @@ export default function PersonalizedDashboard() {
                 style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center font-display font-bold"
                   style={{ background: `${FEAR_COLORS[fearType]}18`, color: FEAR_COLORS[fearType] }}>
-                  {userName.charAt(0).toUpperCase()}
+                  {(displayName || 'K').charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
-                  <p className="font-sans text-sm text-white font-medium">{userName}</p>
+                  <p className="font-sans text-sm text-white font-medium">{displayName || FEAR_NAMES[fearType]}</p>
                   <p className="font-sans text-[10px]" style={{ color: FEAR_COLORS[fearType] }}>{FEAR_NAMES[fearType]}</p>
                 </div>
                 <Flame className="w-3.5 h-3.5 ml-auto" style={{ color: 'var(--accent)' }} />

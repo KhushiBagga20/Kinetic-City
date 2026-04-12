@@ -25,7 +25,8 @@ const SPECIALS: SpecialEvent[] = [
 ]
 
 export default function TimeMachinePage() {
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const setTimeMachineResult = useAppStore(s => s.setTimeMachineResult)
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
 
@@ -407,7 +408,7 @@ export default function TimeMachinePage() {
                   <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 30%, rgba(29,158,117,0.5), transparent 60%)' }} />
                   <div className="relative text-center">
                     <p className="text-4xl mb-4">🏆</p>
-                    <h2 className="font-display font-bold text-2xl text-white mb-2">{userName}, you survived every crash.</h2>
+                    <h2 className="font-display font-bold text-2xl text-white mb-2">{userName ? `${userName}, you survived every crash.` : 'You survived every crash.'}</h2>
                     <p className="font-sans text-sm text-white/40 mb-6">You invested {formatINR(totalInvested)} over {Math.round(getNiftyFromYear(startYear).length / 12)} years.</p>
                     <motion.p
                       initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}

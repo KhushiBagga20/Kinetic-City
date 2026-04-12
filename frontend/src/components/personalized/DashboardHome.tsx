@@ -8,6 +8,7 @@ import FearHomePage from './home/FearHomePage'
 import PortfolioPulse from './PortfolioPulse'
 import AgeAllocation from './AgeAllocation'
 import { Zap, ChevronDown, Search, FlaskConical, ArrowRight, TrendingUp, Sprout } from 'lucide-react'
+import FearQuote from './shared/FearQuote'
 
 const FEAR_COLORS: Record<FearType, string> = {
   loss: '#E24B4A', jargon: '#378ADD', scam: '#c0f18e', trust: '#1D9E75',
@@ -61,7 +62,8 @@ const JARGON_WORDS = [
 
 export default function DashboardHome() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const firstName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
 
   const [jargonSearch, setJargonSearch] = useState('')
@@ -85,7 +87,13 @@ export default function DashboardHome() {
 
   const color = FEAR_COLORS[fearType]
   const hasPortfolio = portfolioMetrics !== null
-  const timeOfDay = new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'
+  const hour = new Date().getHours()
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+
+  // Personal greeting copy
+  const greetingLine = firstName
+    ? `Good ${timeOfDay}, ${firstName}.`
+    : `Good ${timeOfDay}.`
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
@@ -101,8 +109,8 @@ export default function DashboardHome() {
         style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderLeft: `3px solid ${color}` }}
       >
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ background: `radial-gradient(circle at 90% 50%, ${color}, transparent 60%)` }} />
-        <p className="font-sans text-xs text-white/30 mb-0.5">Good {timeOfDay},</p>
-        <h1 className="font-display font-semibold text-2xl text-white tracking-tight">{userName}</h1>
+        <p className="font-sans text-sm text-white/60 leading-relaxed">{greetingLine}</p>
+        <FearQuote context="dashboard" variant="subtle" className="mt-2" />
         {hasPortfolio && (
           <p className="font-sans text-xs text-white/25 mt-1">
             Your portfolio is live. <button onClick={() => setDashboardSection('portfolio')} className="underline hover:text-white/40 transition-colors" style={{ color: 'var(--accent)' }}>View details →</button>

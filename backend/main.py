@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import mentor, auth, sandbox, harvest
+from routers import mentor, auth, sandbox, harvest, quotes
 
 # ── Load environment variables ───────────────────────────────────────────────
 load_dotenv()
@@ -38,6 +38,7 @@ app.include_router(mentor.router)
 app.include_router(auth.router)
 app.include_router(sandbox.router)
 app.include_router(harvest.router)
+app.include_router(quotes.router)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 PERIOD_DAYS = {

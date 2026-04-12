@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { Flame, Shield, BookOpen, AlertTriangle, Lock, BarChart3, Clock, CreditCard, Check, LogOut } from 'lucide-react'
 import { formatINR } from '../../../lib/formatINR'
+import FearQuote from '../shared/FearQuote'
 
 const FEAR_NAMES: Record<FearType, string> = {
   loss: 'Loss Avoider', jargon: 'Clarity Seeker', scam: 'Pattern Detector', trust: 'Independence Guardian',
@@ -27,7 +28,9 @@ const FEAR_STRENGTH: Record<FearType, string[]> = {
 
 export default function ProfilePage() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const userName = rawName && rawName !== 'Explorer' ? rawName : ''
+  const firstName = userName ? userName.split(' ')[0] : ''
   const streakDays = useAppStore(s => s.streakDays)
   const simulationResult = useAppStore(s => s.simulationResult)
   const timeMachineResult = useAppStore(s => s.timeMachineResult)
@@ -67,10 +70,10 @@ export default function ProfilePage() {
         <div className="relative flex items-start gap-5">
           {/* Avatar */}
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display font-bold text-2xl shrink-0" style={{ background: `${color}15`, color }}>
-            {userName.charAt(0).toUpperCase()}
+            {(firstName || FEAR_NAMES[fearType].charAt(0)).charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="font-display font-bold text-2xl text-white tracking-tight mb-0.5">{userName}</h1>
+            <h1 className="font-display font-bold text-2xl text-white tracking-tight mb-0.5">{userName || FEAR_NAMES[fearType]}</h1>
             {/* Fear badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-3"
               style={{ background: `${color}10`, borderColor: `${color}30`, color }}>
@@ -116,6 +119,9 @@ export default function ProfilePage() {
           ))}
         </div>
       </motion.div>
+
+      {/* ── AI personalised quote ─────────────────────────────────────── */}
+      <FearQuote context="profile" variant="card" />
 
       {/* ── Stats ─────────────────────────────────────────────────────── */}
       <motion.div

@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
 import { Check, Download, Copy, ArrowRight, Palette, Type, BarChart3 } from 'lucide-react'
+import FearQuote from '../shared/FearQuote'
 
 // ── Fear data ───────────────────────────────────────────────────────────────
 
@@ -83,6 +84,8 @@ export default function MyCardPage() {
   const completedModules = useAppStore(s => s.completedModules)
   const streakDays = useAppStore(s => s.streakDays)
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
+  const rawName = useAppStore(s => s.userName)
+  const displayName = rawName && rawName !== 'Explorer' ? rawName : ''
 
   // Card customisation state
   const cardStyle = useAppStore(s => s.cardStyle)
@@ -201,6 +204,11 @@ export default function MyCardPage() {
               </div>
 
               {/* Fear type name */}
+              {displayName && (
+                <p className="font-display font-medium text-sm mb-1" style={{ color: `${styles.textPrimary}80` }}>
+                  {displayName}
+                </p>
+              )}
               <h2 className="font-display font-bold text-3xl mb-3 leading-tight" style={{ color: styles.textPrimary }}>
                 {FEAR_NAMES[fearType]}
               </h2>
@@ -233,8 +241,9 @@ export default function MyCardPage() {
         {/* ── RIGHT: Customisation Panel ───────────────────────────────────── */}
         <div className="space-y-6">
           <div>
-            <h2 className="font-display font-semibold text-2xl text-white mb-2 tracking-tight">Your Fear Fingerprint</h2>
+            <h2 className="font-display font-semibold text-2xl text-white mb-2 tracking-tight">{displayName ? `${displayName}'s Fear Fingerprint` : 'Your Fear Fingerprint'}</h2>
             <p className="font-sans text-sm text-white/40">Customise your card, then download or share.</p>
+            <FearQuote context="card" variant="subtle" className="mt-3" />
           </div>
 
           {/* 1. Card Style */}

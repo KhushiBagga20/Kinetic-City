@@ -6,6 +6,7 @@ import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
 import RiskHorizon from '../RiskHorizon'
 import CrashTimeline from '../CrashTimeline'
+import FearQuote from '../shared/FearQuote'
 
 Chart.register(...registerables)
 
@@ -288,6 +289,9 @@ export default function SimulationPage() {
                 {FEAR_INSIGHTS[fearType]}
               </p>
             </div>
+
+            {/* AI personalised quote */}
+            <FearQuote context="simulation" variant="card" />
           </motion.div>
         </div>
 

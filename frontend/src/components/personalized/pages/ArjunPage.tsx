@@ -53,7 +53,8 @@ interface Message {
 export default function ArjunPage() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const metaphorStyle = useAppStore(s => s.metaphorStyle) ?? 'generic'
-  const userName = useAppStore(s => s.userName) || 'Explorer'
+  const rawName = useAppStore(s => s.userName)
+  const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : 'there'
 
   const firstMsg = FIRST_MESSAGES[fearType].replace('{name}', userName)
   const [messages, setMessages] = useState<Message[]>([

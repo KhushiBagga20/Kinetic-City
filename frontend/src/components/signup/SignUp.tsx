@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { useAppStore, type FearType } from '../../store/useAppStore'
+import { postCreateUser } from '../../lib/api'
 
 // ── Personalized headlines per fear type ──────────────────────────────────────
 
@@ -48,17 +49,40 @@ export default function SignUp({ onComplete }: SignUpProps) {
     if (!name.trim() || !email.trim()) return
 
     setLoading(true)
-    setUserProfile(name.trim(), email.trim(), '')
-    updateStreak()
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    const fearT = useAppStore.getState().fearType ?? 'loss'
+    const metaphor = useAppStore.getState().metaphorStyle ?? 'generic'
 
-    // 600ms loading state
-    await new Promise(resolve => setTimeout(resolve, 600))
+    setUserProfile(trimmedName, trimmedEmail, '')
+
+    // Call backend to create user
+    try {
+      const res = await postCreateUser({
+        name: trimmedName,
+        email: trimmedEmail,
+        fear_type: fearT,
+        metaphor_style: metaphor,
+      })
+      if (res.success && res.user_id) {
+        useAppStore.setState({ userId: res.user_id, isAuthenticated: true })
+      }
+    } catch {
+      // Backend offline — still set auth for offline usage
+      useAppStore.setState({
+        userId: 'local_' + Math.random().toString(36).substring(2, 10),
+        isAuthenticated: true,
+      })
+    }
+
+    updateStreak()
+    await new Promise(resolve => setTimeout(resolve, 400))
     onComplete()
   }
 
   function handleSkip() {
     setLoading(true)
-    setUserProfile('Explorer', '', generateGuestId())
+    setUserProfile('', '', generateGuestId())
     updateStreak()
 
     setTimeout(() => {

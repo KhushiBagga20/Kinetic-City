@@ -100,3 +100,13 @@ class HarvestDebriefRequest(BaseModel):
 
 class HarvestDebriefResponse(BaseModel):
     insights: str
+
+
+class FearQuoteRequest(BaseModel):
+    fear_type: str
+    user_name: str = ''
+    context: str = 'dashboard'  # dashboard, profile, card, simulation, portfolio
+
+
+class FearQuoteResponse(BaseModel):
+    quote: str
