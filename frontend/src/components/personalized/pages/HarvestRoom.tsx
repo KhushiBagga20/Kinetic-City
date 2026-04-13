@@ -197,7 +197,7 @@ export default function HarvestRoom() {
       allocation: alloc,
       finalValue: finalTotal,
       totalInvested,
-      arjunInsights: insights,
+      kinuInsights: insights,
       date: new Date().toISOString(),
     })
   }
@@ -485,12 +485,12 @@ export default function HarvestRoom() {
               </div>
             </div>
 
-            {/* Arjun Insights */}
+            {/* KINU Insights */}
             <div className="space-y-4">
               {insightsLoading ? (
                 <div className="flex items-center gap-3 py-8 justify-center">
                   <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
-                  <p className="font-sans text-sm text-white/30">Arjun is analysing your harvest...</p>
+                  <p className="font-sans text-sm text-white/30">KINU is analysing your harvest...</p>
                 </div>
               ) : (
                 insights.split('|||').map((msg, i) => (

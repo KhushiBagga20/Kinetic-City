@@ -11,7 +11,7 @@ export default function MarketExplainer() {
       <div className="rounded-2xl p-6 border overflow-x-auto" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
         <div className="flex items-center justify-between min-w-[400px] gap-4">
           {/* Company */}
-          <button onClick={() => setDashboardSection('arjun')}
+          <button onClick={() => setDashboardSection('kinu')}
             className="rounded-2xl p-4 border text-center shrink-0 transition-[border-color] duration-200 hover:border-[var(--accent)]"
             style={{ borderColor: 'var(--border)', background: 'rgba(29,158,117,0.06)', width: '110px' }}>
             <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(29,158,117,0.12)' }}>
@@ -37,7 +37,7 @@ export default function MarketExplainer() {
           </div>
 
           {/* You */}
-          <button onClick={() => setDashboardSection('arjun')}
+          <button onClick={() => setDashboardSection('kinu')}
             className="rounded-2xl p-4 border text-center shrink-0 transition-[border-color] duration-200 hover:border-[var(--accent)]"
             style={{ borderColor: 'var(--border)', background: 'rgba(192,241,142,0.04)', width: '110px' }}>
             <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(192,241,142,0.08)' }}>

@@ -98,7 +98,7 @@ const FUND_OPTIONS = [
   },
 ]
 
-// ── Arjun insights ──────────────────────────────────────────────────────────
+// ── KINU insights ──────────────────────────────────────────────────────────
 
 const FEAR_PORTFOLIO_INSIGHTS: Record<FearType, string> = {
   loss: "Your portfolio is up. But more importantly — it has survived every simulated dip and recovered. That pattern is the whole point.",
@@ -844,13 +844,13 @@ function ActivePortfolio() {
         </div>
       </motion.div>
 
-      {/* Arjun insight */}
+      {/* KINU insight */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }} className="flex gap-3">
         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(192,241,142,0.08)', border: '1px solid rgba(192,241,142,0.18)' }}>
           <Zap className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
         </div>
         <div className="rounded-2xl p-5 border flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <p className="font-sans text-[9px] text-white/20 uppercase tracking-wider mb-2">Arjun on your portfolio</p>
+          <p className="font-sans text-[9px] text-white/20 uppercase tracking-wider mb-2">KINU on your portfolio</p>
           <p className="font-sans text-sm text-white/50 leading-relaxed">{insight}</p>
         </div>
       </motion.div>

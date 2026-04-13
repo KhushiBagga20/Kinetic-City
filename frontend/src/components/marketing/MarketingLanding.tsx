@@ -72,7 +72,7 @@ const STEPS = [
   },
   {
     n: '04', title: 'Simulate. Learn. Overcome.',
-    sub: 'Run your ₹500 through a real market crash. Watch it survive. Then you\'ll know.',
+    sub: 'Run your ₹100 through a real market crash. Watch it survive. Then you\'ll know.',
     visual: <FanChartMockup />,
   },
 ]
@@ -155,7 +155,7 @@ function FanChartMockup() {
   ]
   return (
     <div className="rounded-3xl p-5 border max-w-[280px]" style={{ background: '#071a1f', borderColor: 'rgba(255,255,255,0.06)' }}>
-      <p className="font-sans text-[9px] text-white/30 uppercase tracking-wider mb-4">₹500/month · 10 years · 600 simulations</p>
+      <p className="font-sans text-[9px] text-white/30 uppercase tracking-wider mb-4">₹100/month · 10 years · 600 simulations</p>
       <svg viewBox="0 0 200 140" className="w-full h-28">
         {/* Fan area */}
         <path d="M 20,120 Q 100,90 180,20 L 180,110 Q 100,130 20,120 Z" fill="rgba(55,138,221,0.06)" />
@@ -410,7 +410,7 @@ export default function MarketingLanding() {
           {[
             { n: '7.5%', label: 'of Indians invest in markets', sub: 'Despite 140 crore people' },
             { n: '5.8%', label: 'annual inflation', sub: 'Silently eating your savings' },
-            { n: '4.2', label: 'years wasted on average', sub: 'Before making the first investment' },
+            { n: '11', label: 'market crashes since 2000', sub: 'Every single one recovered.' },
           ].map((stat, i) => (
             <FadeIn key={i} delay={i * 0.1}>
               <div className="rounded-3xl p-7 border" style={{ background: '#071a1f', borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -430,7 +430,6 @@ export default function MarketingLanding() {
         </div>
       </section>
 
-      {/* ── SECTION 2: FEAR TYPES ───────────────────────────────────── */}
       <section className="py-28 px-6 md:px-10" style={{ background: '#071a1f' }}>
         <div className="max-w-[1100px] mx-auto">
           <FadeIn className="mb-4 text-center">
@@ -440,14 +439,8 @@ export default function MarketingLanding() {
             </h2>
           </FadeIn>
           <FadeIn delay={0.1} className="text-center mb-16">
-            <p className="font-sans text-base text-white/40">Hover over each card to reveal your type.</p>
+            <p className="font-display font-medium text-lg text-white/40 italic">One of these four is yours.</p>
           </FadeIn>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-14">
-            {FEAR_CARDS.map((card, i) => (
-              <FearTypeCard key={card.id} card={card} index={i} />
-            ))}
-          </div>
 
           <FadeIn className="text-center">
             <button onClick={handleStart}
@@ -480,7 +473,7 @@ export default function MarketingLanding() {
       <section className="py-28 px-6" style={{ background: '#071a1f' }}>
         <div ref={statsRef} className="max-w-[1000px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-6 mb-12">
-            <StatCounter value={500} suffix="" label="minimum to start" sublabel="One cup of coffee a month" />
+            <StatCounter value={100} suffix="" label="minimum to start" sublabel="One cup of coffee a month" />
             <StatCounter value={14} suffix="%" label="Nifty 50 avg CAGR" sublabel="Since 2001 — NSE data" />
             <StatCounter value={6} suffix=" months" label="COVID recovery time" sublabel="March → September 2020" />
           </div>

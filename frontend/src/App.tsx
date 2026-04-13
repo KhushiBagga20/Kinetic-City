@@ -9,6 +9,8 @@ import FearProfiler from './components/landing/FearProfiler'
 import SignUp from './components/signup/SignUp'
 import PersonalizedDashboard from './components/personalized/PersonalizedDashboard'
 import LoginModal from './components/auth/LoginModal'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { setLandingTitle } from './lib/pageTitles'
 
 function App() {
   const view = useAppStore(state => state.view)
@@ -34,6 +36,13 @@ function App() {
     window.addEventListener('kinetic:open-login', handler)
     return () => window.removeEventListener('kinetic:open-login', handler)
   }, [])
+
+  // ── Set page title based on view ──────────────────────────────────────────
+  useEffect(() => {
+    if (view === 'landing') setLandingTitle()
+    else if (view === 'quiz') document.title = 'Fear Profiler — KINETIC'
+    else if (view === 'signup') document.title = 'Sign Up — KINETIC'
+  }, [view])
 
   // Lenis smooth scroll — only active on landing page
   useEffect(() => {
@@ -92,7 +101,9 @@ function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <PersonalizedDashboard />
+            <ErrorBoundary>
+              <PersonalizedDashboard />
+            </ErrorBoundary>
           </motion.div>
 
         ) : view === 'signup' ? (
@@ -103,7 +114,9 @@ function App() {
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
           >
-            <SignUp onComplete={() => setView('personalized-dashboard')} />
+            <ErrorBoundary>
+              <SignUp onComplete={() => setView('personalized-dashboard')} />
+            </ErrorBoundary>
           </motion.div>
 
         ) : view === 'quiz' ? (
@@ -114,7 +127,9 @@ function App() {
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
           >
-            <FearProfiler />
+            <ErrorBoundary>
+              <FearProfiler />
+            </ErrorBoundary>
           </motion.div>
 
         ) : (
@@ -125,7 +140,9 @@ function App() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
           >
-            <MarketingLanding />
+            <ErrorBoundary>
+              <MarketingLanding />
+            </ErrorBoundary>
           </motion.div>
         )}
 

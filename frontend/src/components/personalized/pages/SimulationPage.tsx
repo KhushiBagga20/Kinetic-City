@@ -102,17 +102,18 @@ export default function SimulationPage() {
         borderColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1,
         pointRadius: 0,
+        pointHoverRadius: 0,
         fill: false,
-        tension: 0.3,
+        tension: 0.4,
       })),
       // Invested line
-      { data: data.invested, label: 'What you put in', borderColor: 'rgba(192,241,142,0.6)', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0 },
+      { data: data.invested, label: 'What you put in', borderColor: 'rgba(192,241,142,0.6)', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0 },
       // p10
-      { data: data.p10, label: 'Worst case (p10)', borderColor: 'rgba(226,75,74,0.8)', borderWidth: 2, borderDash: [4, 3], pointRadius: 0, fill: false, tension: 0.3 },
+      { data: data.p10, label: 'Worst case (p10)', borderColor: 'rgba(226,75,74,0.8)', borderWidth: 2, borderDash: [4, 3], pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0.4 },
       // p50
-      { data: data.p50, label: 'Median', borderColor: '#378ADD', borderWidth: 3, pointRadius: 0, fill: false, tension: 0.3 },
+      { data: data.p50, label: 'Median', borderColor: '#378ADD', borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0.4 },
       // p90
-      { data: data.p90, label: 'Best case', borderColor: 'rgba(29,158,117,0.8)', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { data: data.p90, label: 'Best case', borderColor: 'rgba(29,158,117,0.8)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0.4 },
     ]
 
     chartInstance.current = new Chart(chartRef.current, {

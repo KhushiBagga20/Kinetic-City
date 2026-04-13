@@ -109,7 +109,7 @@ export const CLARITY_TRACK: CurriculumModule[] = [
   },
   {
     id: 'clarity-5',
-    title: 'Ask Arjun your most embarrassing question',
+    title: 'Ask KINU your most embarrassing question',
     type: 'Story',
     estimatedMinutes: 3,
     fearProgressIncrement: 6,

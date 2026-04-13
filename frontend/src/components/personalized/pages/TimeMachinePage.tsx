@@ -775,7 +775,7 @@ export default function TimeMachinePage() {
               />
             </div>
 
-            {/* Arjun Debrief */}
+            {/* KINU Debrief */}
             <InstinctDebrief startYear={startYear} monthlyAmount={monthlyAmount} finalValue={finalValue} totalInvested={totalInvested} didWithdraw={didWithdraw} withdrawMonth={null} />
 
             {/* Actions */}
@@ -828,12 +828,12 @@ function InstinctDebrief({ startYear, monthlyAmount, finalValue, totalInvested, 
         <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
       </div>
       <div className="rounded-3xl p-5 border flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <p className="font-sans text-[10px] text-white/25 uppercase tracking-wider mb-3">Arjun's instinct debrief</p>
+        <p className="font-sans text-[10px] text-white/25 uppercase tracking-wider mb-3">KINU's instinct debrief</p>
         {loading ? (
           <div className="flex items-center gap-2">
             <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
               className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-            <p className="font-sans text-sm text-white/30">Arjun is thinking...</p>
+            <p className="font-sans text-sm text-white/30">KINU is thinking...</p>
           </div>
         ) : (
           <p className="font-sans text-sm text-white/60 leading-relaxed">{debrief}</p>

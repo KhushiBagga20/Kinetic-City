@@ -3,16 +3,16 @@ import { useState } from 'react'
 import { MessageCircle, X, Send } from 'lucide-react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 
-const ARJUN_GREETINGS: Record<FearType, string> = {
+const KINU_GREETINGS: Record<FearType, string> = {
   loss: "I know the idea of losing money feels terrifying. Let's look at what actually happens when markets dip — with real rupee numbers.",
   jargon: "No jargon here, I promise. Ask me anything about investing and I'll explain it like we're having chai together.",
   scam: "Healthy skepticism is a superpower. Let me show you exactly how regulated mutual funds work — no trust required, just facts.",
   trust: "You don't have to trust me or anyone. Let me show you how index funds work — no human decisions involved, just math.",
 }
 
-export default function ArjunFloatingButton() {
+export default function KinuFloatingButton() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'arjun'; text: string }>>([])
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'kinu'; text: string }>>([])
   const [input, setInput] = useState('')
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const userName = useAppStore(s => s.userName) || 'there'
@@ -22,7 +22,7 @@ export default function ArjunFloatingButton() {
     setMessages(m => [
       ...m,
       { role: 'user', text: input.trim() },
-      { role: 'arjun', text: "I'm Arjun, your AI mentor. Full AI chat is coming soon — for now, explore the modules on your dashboard. They're personalized for your fear type." },
+      { role: 'kinu', text: "I'm KINU, your financial intelligence. Full AI chat is coming soon — for now, explore the modules on your dashboard. They're personalized for your fear type." },
     ])
     setInput('')
   }
@@ -62,8 +62,8 @@ export default function ArjunFloatingButton() {
                   <MessageCircle className="w-5 h-5 text-[var(--color-primary-fixed)]" />
                 </div>
                 <div>
-                  <h2 className="font-display text-base text-white font-semibold">Arjun</h2>
-                  <p className="text-[10px] font-sans text-white/35">Your AI Mentor</p>
+                  <h2 className="font-display text-base text-white font-semibold">KINU</h2>
+                  <p className="text-[10px] font-sans text-white/35 uppercase tracking-[0.1em]">Kinetic Intelligence Neural User</p>
                 </div>
               </div>
               <button
@@ -89,7 +89,7 @@ export default function ArjunFloatingButton() {
                 }}
               >
                 <p className="text-xs font-sans text-white/65 leading-relaxed">
-                  Hey {userName}! {ARJUN_GREETINGS[fearType]}
+                  Hey {userName}! {KINU_GREETINGS[fearType]}
                 </p>
               </motion.div>
 
@@ -122,7 +122,7 @@ export default function ArjunFloatingButton() {
                   type="text"
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  placeholder="Ask Arjun anything..."
+                  placeholder="Ask KINU anything..."
                   className="flex-1 px-5 py-3.5 rounded-2xl font-sans text-sm text-white placeholder-white/25 outline-none"
                   style={{
                     background: 'rgba(255,255,255,0.04)',

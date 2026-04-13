@@ -110,7 +110,7 @@ export default function FearQuote({ context = 'dashboard', variant = 'inline', c
         </p>
         {isAI && (
           <p className="font-sans text-[9px] text-white/15 mt-2 uppercase tracking-wider">
-            Arjun &middot; personalised for you
+            KINU &middot; personalised for you
           </p>
         )}
       </motion.div>

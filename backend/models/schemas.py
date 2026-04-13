@@ -11,8 +11,9 @@ class MentorRequest(BaseModel):
     message: str
     fear_type: str
     metaphor_style: str
-    context: str = "arjun_chat_page"
+    context: str = "kinu_chat_page"
     conversation_history: list[ConversationMessage] = []
+    app_context: Optional[str] = None  # buildKINUContext() string from frontend
 
 
 class MentorResponse(BaseModel):
@@ -110,3 +111,16 @@ class FearQuoteRequest(BaseModel):
 
 class FearQuoteResponse(BaseModel):
     quote: str
+
+
+class TermRequest(BaseModel):
+    term: str
+    fear_type: Optional[str] = None
+
+
+class TermResponse(BaseModel):
+    term: str
+    plain: str
+    analogy: str
+    whyItMatters: str
+    fromKINU: bool = True

@@ -8,7 +8,7 @@ from models.schemas import HarvestDebriefRequest, HarvestDebriefResponse
 
 router = APIRouter()
 
-ARJUN_SYSTEM = """You are Arjun, a calm stoic financial mentor for young Indians aged 18–28.
+KINU_SYSTEM = """You are KINU — Kinetic Intelligence Neural User. You are a calm, precise financial intelligence for young Indians aged 18–28.
 Never use jargon without explaining it.
 Always give rupee amounts not percentages.
 Frame worst cases as survivable and temporary.
@@ -18,7 +18,7 @@ CRITICAL: Never say "you made a mistake." Never shame the user's choices. Frame 
 
 @router.post("/api/harvest-debrief", response_model=HarvestDebriefResponse)
 async def harvest_debrief(req: HarvestDebriefRequest):
-    """Generate Arjun's insights for a Harvest Room simulation."""
+    """Generate KINU's insights for a Harvest Room simulation."""
     try:
         api_key = os.getenv("GEMINI_API_KEY", "")
         if not api_key:
@@ -50,7 +50,7 @@ Max 60 words per message. Warm, specific, no jargon."""
 
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
-            system_instruction=ARJUN_SYSTEM,
+            system_instruction=KINU_SYSTEM,
         )
         response = model.generate_content(
             user_message,

@@ -144,11 +144,11 @@ export default function AgeAllocation() {
         This is the classic 100-minus-age rule used by most wealth managers. It is a starting point, not a prescription. Your risk tolerance may differ.
       </p>
 
-      {/* Ask Arjun */}
-      <button onClick={() => setDashboardSection('arjun')}
+      {/* Ask KINU */}
+      <button onClick={() => setDashboardSection('kinu')}
         className="font-sans text-[10px] mt-3 transition-[color] duration-200 hover:text-white/40"
         style={{ color: 'var(--accent)' }}>
-        Ask Arjun to customise this for me →
+        Ask KINU to customise this for me →
       </button>
     </motion.div>
   )

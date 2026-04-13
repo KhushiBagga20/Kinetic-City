@@ -67,7 +67,7 @@ function SkeletonRow() {
    MARKET NEWS FEED
    ══════════════════════════════════════════════════════════════════════════ */
 
-export default function MarketNewsFeed({ maxItems = 5, compact = false, fearType }: Props) {
+export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false, fearType }: Props) {
   const newsItems = useAppStore(s => s.newsItems)
   const newsLastFetched = useAppStore(s => s.newsLastFetched)
 

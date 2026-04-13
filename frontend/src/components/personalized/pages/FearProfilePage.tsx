@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { Shield, Search, Fingerprint, Unlock, ChevronDown, RefreshCcw, Zap } from 'lucide-react'
 import FearQuote from '../shared/FearQuote'
+import FearQuiz from '../shared/FearQuiz'
 
 // ── Fear Type Data ──────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ const FEAR_TYPES: FearTypeInfo[] = [
     kineticBullets: [
       'The Jargon Graveyard kills 40 terms dead with plain-English definitions and real-world analogies',
       'Every module is written at a level where zero prior knowledge is assumed',
-      'Arjun answers any question — no jargon, no judgment, no sales pitch',
+      'KINU answers any question — no jargon, no judgment, no sales pitch',
     ],
   },
   {
@@ -234,6 +235,12 @@ export default function FearProfilePage() {
                             </li>
                           ))}
                         </ul>
+                      </div>
+
+                      {/* Test yourself quiz */}
+                      <div>
+                        <p className="font-sans text-[10px] text-white/20 uppercase tracking-wider mb-3">Test yourself</p>
+                        <FearQuiz fearType={ft.id} />
                       </div>
                     </div>
                   </motion.div>

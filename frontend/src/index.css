@@ -98,3 +98,58 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Accent text matches lime green */
 .accent { color: var(--accent); }
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Jargon Graveyard scrollable list */
+.jargon-list {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.jargon-list::-webkit-scrollbar { width: 3px; }
+.jargon-list::-webkit-scrollbar-track { background: transparent; }
+.jargon-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* Glass card consistent style */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+}
+.glass-card-hover {
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.glass-card-hover:hover {
+  border-color: rgba(255,255,255,0.14);
+  transform: translateY(-1px);
+}
+.glass-card-hover:active {
+  transform: translateY(0px) scale(0.995);
+}
+
+/* Input bottom-border style */
+.input-bottom {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  outline: none;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s ease;
+}
+.input-bottom:focus {
+  border-bottom-color: var(--accent);
+}
+
+/* Minimum tap target for buttons */
+button { min-height: 44px; }

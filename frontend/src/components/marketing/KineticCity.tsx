@@ -493,7 +493,7 @@ export default function KineticCity({ onStart }: Props) {
             <rect x="674" y={GY-105} width="8" height="6" rx="1" fill={C.accent} opacity="0.5" className="kinetic-anim kc-win-b" />
           </motion.g>
 
-          {/* ═══════ BLD 5: ARJUN LIGHTHOUSE ═══════ */}
+          {/* ═══════ BLD 5: KINU LIGHTHOUSE ═══════ */}
           <motion.g
             initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
             transition={{ delay: D.b(2), ...rise }}

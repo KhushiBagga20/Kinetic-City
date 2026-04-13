@@ -80,7 +80,7 @@ function TodaysOneThing() {
       </p>
 
       <p className="text-[10px] font-sans text-white/25">
-        Tap to ask Arjun to explain it differently
+        Tap to ask KINU to explain it differently
       </p>
     </motion.div>
   )
@@ -249,7 +249,7 @@ function TodaysMicroAction() {
 
   const actions = [
     { id: 'clarity-micro-1', text: 'Learn one term from the Jargon Graveyard' },
-    { id: 'clarity-micro-2', text: "Ask Arjun to explain SIP like you're 12" },
+    { id: 'clarity-micro-2', text: "Ask KINU to explain SIP like you're 12" },
     { id: 'clarity-micro-3', text: "Find out what your FD's real return is after inflation" },
   ]
 

@@ -45,11 +45,11 @@ const FEAR_ACTIONS: Record<FearType, ActionCard[]> = {
   ],
   jargon: [
     { id: 'learn', label: 'Kill 3 words today', desc: 'SIP, NAV, Expense Ratio. Learn them once, never be confused again.', cta: 'Go to Glossary', icon: BookOpen, priority: true },
-    { id: 'arjun', label: 'Ask your dumbest question', desc: 'Arjun has no jargon. Ask anything. There are no stupid questions here.', cta: 'Talk to Arjun', icon: Eye, priority: false },
+    { id: 'kinu', label: 'Ask your dumbest question', desc: 'KINU has no jargon. Ask anything. There are no stupid questions here.', cta: 'Talk to KINU', icon: Eye, priority: false },
   ],
   scam: [
     { id: 'learn', label: 'Take the Red Flag Quiz', desc: 'Can you spot a scam from a real fund? 5 questions, instant feedback.', cta: 'Start Quiz', icon: AlertTriangle, priority: true },
-    { id: 'arjun', label: 'Verify anything', desc: 'Tell Arjun any fund or offer. He\'ll show you the SEBI data.', cta: 'Ask Arjun', icon: Shield, priority: false },
+    { id: 'kinu', label: 'Verify anything', desc: 'Tell KINU any fund or offer. He\'ll show you the SEBI data.', cta: 'Ask KINU', icon: Shield, priority: false },
   ],
   trust: [
     { id: 'simulation', label: 'Let the math speak', desc: '600 simulations. No opinions. Just historical data and probability.', cta: 'Run Simulation', icon: BarChart3, priority: true },

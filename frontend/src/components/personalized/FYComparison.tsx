@@ -142,7 +142,7 @@ export default function FYComparison() {
         ))}
       </div>
 
-      {/* Arjun insight */}
+      {/* KINU insight */}
       {insight && (
         <div className="rounded-2xl p-4 border mb-4" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderLeft: '3px solid var(--accent)' }}>
           <div className="flex items-start gap-2">

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 const testimonials = [
   {
     quote: "I used to check my portfolio every time there was a news alert. Kinetic didn't just give me an app; they gave me a different perspective. I finally sleep through market dips.",
-    name: 'Arjun Bhatia',
+    name: 'Priya Bhatia',
     role: 'Software Engineer, Bangalore',
     initials: 'AB',
   },

@@ -54,7 +54,7 @@ function CrashTooltip({ crash, position }: { crash: CrashEvent; position: 'above
             </p>
           </div>
         </div>
-        <p className="font-sans text-[11px] text-white/40 leading-relaxed italic">{crash.lessonFromArjun}</p>
+        <p className="font-sans text-[11px] text-white/40 leading-relaxed italic">{crash.lessonFromKinu}</p>
       </div>
     </motion.div>
   )
@@ -267,7 +267,7 @@ function CrashBar({ crash, index, isInView }: { crash: CrashEvent; index: number
                     </p>
                   </div>
                 </div>
-                <p className="font-sans text-[10px] text-white/35 italic leading-relaxed">{crash.lessonFromArjun}</p>
+                <p className="font-sans text-[10px] text-white/35 italic leading-relaxed">{crash.lessonFromKinu}</p>
               </div>
             </div>
           </motion.div>

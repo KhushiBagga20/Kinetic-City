@@ -1,5 +1,5 @@
 """
-Arjun AI Mentor — Gemini-powered financial mentor router.
+KINU AI Mentor — Gemini-powered financial intelligence router.
 POST /api/mentor
 """
 import os
@@ -10,19 +10,15 @@ router = APIRouter()
 
 # ── System prompt ────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = """You are Arjun, a calm stoic financial mentor for young Indians aged 18–28.
-Never use jargon without explaining it.
-Always give rupee amounts not percentages.
-Frame worst cases as survivable and temporary.
-Max 60 words unless asked for more.
+SYSTEM_PROMPT = """You are KINU — Kinetic Intelligence Neural User. You are a calm, precise financial intelligence built into the Kinetic app. You lead with data, then meaning, then action. Every response has three internal layers even if they flow together: the fact, what it means for this person, and what they can do about it. You never use financial jargon without explaining it. You always give rupee amounts. You frame worst cases as survivable. You are not warm or brotherly — you are quietly confident and always specific. Maximum 60 words unless asked for more.
 
-Adapt your metaphors based on the user's fear type:
+Adapt your response based on the user's fear type:
 - loss → focus on survivability, historical recovery, worst-case rupee amounts
 - jargon → use simple analogies, explain every term inline, no shortcuts
 - scam → cite SEBI regulations, data sources, show regulatory proof
 - trust → lead with mathematical proofs, index fund data, minimize personality
 
-You are warm but direct. You never sell anything. You help people understand investing through empathy.
+You never sell anything. You help people understand investing through precision and empathy.
 If you don't know something, say so honestly. Never make up financial data."""
 
 
@@ -38,7 +34,7 @@ FEAR_CONTEXT = {
 
 @router.post("/api/mentor", response_model=MentorResponse)
 async def mentor_chat(req: MentorRequest):
-    """Handle a chat message to Arjun, the AI financial mentor."""
+    """Handle a chat message to KINU, the AI financial intelligence."""
     try:
         api_key = os.getenv("GEMINI_API_KEY", "")
         if not api_key:
@@ -70,7 +66,10 @@ async def mentor_chat(req: MentorRequest):
         )
 
         chat = model.start_chat(history=history)
-        response = chat.send_message(req.message)
+
+        # Prepend app context if provided
+        full_message = f"[User app context: {req.app_context}]\n{req.message}" if req.app_context else req.message
+        response = chat.send_message(full_message)
 
         return MentorResponse(reply=response.text)
 
@@ -80,3 +79,79 @@ async def mentor_chat(req: MentorRequest):
             reply="I'm having a bit of trouble right now. Please try again in a moment. "
                   "If this keeps happening, check if the GEMINI_API_KEY in the backend .env file is valid."
         )
+
+
+# ── Session cache for term lookups ──────────────────────────────────────────
+
+_term_cache: dict[str, dict] = {}
+
+
+@router.post("/api/kinu-term")
+async def explain_term(req: dict):
+    """AI-powered jargon lookup for terms not in the local dictionary."""
+    term = req.get("term", "")
+    fear_type = req.get("fear_type", "")
+
+    if not term:
+        return {"error": "No term provided"}
+
+    # Check cache first
+    cache_key = term.lower().strip()
+    if cache_key in _term_cache:
+        return _term_cache[cache_key]
+
+    try:
+        api_key = os.getenv("GEMINI_API_KEY", "")
+        if not api_key:
+            return {
+                "term": term,
+                "plain": "KINU is not connected yet. Set GEMINI_API_KEY in backend .env.",
+                "analogy": "",
+                "whyItMatters": "",
+                "fromKINU": True,
+            }
+
+        import google.generativeai as genai
+        import json as json_lib
+        genai.configure(api_key=api_key)
+
+        prompt = f"""Explain the financial term "{term}" for a young Indian investor.
+Return ONLY a JSON object with these exact keys:
+- plain: one sentence, plain English, max 25 words
+- analogy: one relatable Indian analogy, max 25 words
+- whyItMatters: one sentence on why this matters for their investing, max 25 words
+No preamble. No markdown. Just the JSON object."""
+
+        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+
+        # Strip markdown code fences if present
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.endswith("```"):
+            text = text[:-3].strip()
+        if text.startswith("json"):
+            text = text[4:].strip()
+
+        data = json_lib.loads(text)
+        result = {
+            "term": term,
+            "plain": data.get("plain", ""),
+            "analogy": data.get("analogy", ""),
+            "whyItMatters": data.get("whyItMatters", ""),
+            "fromKINU": True,
+        }
+
+        _term_cache[cache_key] = result
+        return result
+
+    except Exception as e:
+        print(f"KINU term lookup error: {e}")
+        return {
+            "term": term,
+            "plain": f"Could not look up '{term}' right now.",
+            "analogy": "",
+            "whyItMatters": "",
+            "fromKINU": True,
+        }

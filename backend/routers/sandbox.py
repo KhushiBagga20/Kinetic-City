@@ -13,9 +13,9 @@ from models.schemas import (
 
 router = APIRouter()
 
-# ── Arjun system prompt (shared) ─────────────────────────────────────────────
+# ── KINU system prompt (shared) ─────────────────────────────────────────────
 
-ARJUN_SYSTEM = """You are Arjun, a calm stoic financial mentor for young Indians aged 18–28.
+KINU_SYSTEM = """You are KINU — Kinetic Intelligence Neural User. You are a calm, precise financial intelligence for young Indians aged 18–28.
 Never use jargon without explaining it.
 Always give rupee amounts not percentages.
 Frame worst cases as survivable and temporary.
@@ -109,7 +109,7 @@ YOUR TASK: Find something in their allocation that actually made sense or worked
 CRITICAL: Never say "you made a mistake." Never. Frame everything as learning.
 Max 80 words. Warm, specific."""
 
-        system = f"{ARJUN_SYSTEM}\n\n{fear_ctx}"
+        system = f"{KINU_SYSTEM}\n\n{fear_ctx}"
 
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",
@@ -168,7 +168,7 @@ YOUR TASK: Give actionable portfolio advice. Be specific:
 CRITICAL: Never shame choices. Frame as learning, not failure.
 Max 80 words. Actionable. Not preachy."""
 
-        system = f"""{ARJUN_SYSTEM}
+        system = f"""{KINU_SYSTEM}
 
 You are giving actionable portfolio advice after a sandbox simulation.
 Be specific about what allocation would have worked better and why.
@@ -199,7 +199,7 @@ One principle per response.
 
 @router.post("/api/instinct-debrief", response_model=InstinctDebriefResponse)
 async def instinct_debrief(req: InstinctDebriefRequest):
-    """Arjun analyses the user's Time Machine instinct — did they stay or pull out."""
+    """KINU analyses the user's Time Machine instinct — did they stay or pull out."""
     try:
         api_key = os.getenv("GEMINI_API_KEY", "")
         if not api_key:
@@ -235,7 +235,7 @@ Focus on:
 
 Max 80 words. Be specific. Be warm. Be honest."""
 
-        system = f"{ARJUN_SYSTEM}\n\n{fear_ctx}"
+        system = f"{KINU_SYSTEM}\n\n{fear_ctx}"
 
         model = genai.GenerativeModel(
             model_name="gemini-2.0-flash",

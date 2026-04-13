@@ -161,7 +161,7 @@ export const FY_ANNUAL_RETURNS: Record<string, { nifty: number; midcap: number; 
   FY23: { nifty: -1, midcap: -1.3, smallcap: -1.6 },
 }
 
-// ── Hardcoded Arjun insights per year (FY Comparison card, no API) ──────────
+// ── Hardcoded KINU insights per year (FY Comparison card, no API) ──────────
 
 export const FY_ARJUN_INSIGHTS: Record<string, string> = {
   FY01: 'The dot-com crash wiped out tech stocks globally. FD investors slept peacefully. But the recovery over FY02–03 rewarded those who stayed in equity.',
@@ -512,9 +512,9 @@ export function getWhispers(fy: string, month: number): Whisper[] {
   return whispers.filter(w => w.month === month)
 }
 
-// ── Arjun Context — hardcoded 60-word context per FY (Message 1 in debrief) ─
+// ── KINU Context — hardcoded 60-word context per FY (Message 1 in debrief) ─
 
-export const FY_ARJUN_CONTEXT: Record<string, string> = {
+export const FY_KINU_CONTEXT: Record<string, string> = {
   FY01: 'FY01 was the dot-com crash year. US tech stocks collapsed, dragging Indian IT with them. Nifty fell 16%. This was the first major crash many investors experienced. Fear was universal. FD investors felt vindicated. But the seeds of the greatest bull run in Indian history were planted in these ashes. FY03 delivered +72%.',
   FY02: 'FY01 aftermath. Markets were flat — Nifty fell just 3%. The dot-com fear lingered, keeping most retail investors away. 9/11 added to the terror. But this was the year to accumulate quietly. Those who started SIPs here captured the entire FY03–FY06 bull run. Patience was being tested. Patience won.',
   FY03: 'One of the greatest years in Indian market history. Nifty surged 72%. Smallcaps gained 115%. The dot-com crash was over. Stimulus, cheap valuations, and returning confidence drove a massive rally. Investors who had survived FY01 and FY02 were richly rewarded. This is what staying invested looks like.',

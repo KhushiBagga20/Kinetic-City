@@ -2,20 +2,23 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import DashboardHome from './DashboardHome'
-import ArjunFloatingButton from './shared/ArjunFloatingButton'
+import KinuFloatingButton from './shared/KinuFloatingButton'
 import SimulationPage from './pages/SimulationPage'
 import TimeMachinePage from './pages/TimeMachinePage'
 import LearnPage from './pages/LearnPage'
-import ArjunPage from './pages/ArjunPage'
+import KinuPage from './pages/KinuPage'
 import MyCardPage from './pages/MyCardPage'
 import ProfilePage from './pages/ProfilePage'
 import Sandbox from './pages/Sandbox'
 import PortfolioPage from './pages/PortfolioPage'
 import FearProfilePage from './pages/FearProfilePage'
 import HarvestRoom from './pages/HarvestRoom'
+import HistoricalSimulators from './pages/HistoricalSimulators'
+import ComparePage from './pages/ComparePage'
+import CalculatorsPage from './pages/CalculatorsPage'
+import { setPageTitle } from '../../lib/pageTitles'
 import {
-  Home, LineChart, Clock, FlaskConical, Sprout, BookOpen,
-  MessageCircle, Wallet, ChevronDown, ChevronRight, X, User,
+  LineChart, Clock, ChevronDown, ChevronRight, X, User,
   LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check,
 } from 'lucide-react'
 
@@ -28,13 +31,11 @@ const FEAR_COLORS: Record<FearType, string> = {
   loss: '#E24B4A', jargon: '#378ADD', scam: '#EF9F27', trust: '#1D9E75',
 }
 
-const SIMULATE_SECTIONS = ['simulation', 'time-machine', 'sandbox', 'harvest']
+const SIMULATE_SECTIONS = ['simulation', 'time-machine', 'sandbox', 'harvest', 'historical']
 
 const SIMULATE_ITEMS = [
   { id: 'simulation',   label: 'My Simulation',  desc: 'Monte Carlo fan chart',                icon: LineChart },
   { id: 'time-machine', label: 'Time Machine',    desc: '₹500 through real market crashes',      icon: Clock },
-  { id: 'sandbox',      label: 'Sandbox',         desc: 'Invest in any historical year',         icon: FlaskConical },
-  { id: 'harvest',      label: 'Harvest Room',    desc: 'Freeform portfolio simulator',          icon: Sprout },
 ]
 
 /* ── Active state resolver ─────────────────────────────────────────────────── */
@@ -42,8 +43,8 @@ const SIMULATE_ITEMS = [
 function getActiveTab(section: string): string | null {
   if (section === 'home') return 'home'
   if (SIMULATE_SECTIONS.includes(section)) return 'simulate'
-  if (section === 'learn') return 'learn'
-  if (section === 'arjun') return 'arjun'
+  if (section === 'learn' || section === 'compare' || section === 'calculators') return 'learn'
+  if (section === 'kinu') return 'kinu'
   if (section === 'portfolio') return 'portfolio'
   return null
 }
@@ -69,6 +70,9 @@ export default function PersonalizedDashboard() {
 
   useEffect(() => { updateStreak() }, [updateStreak])
 
+  // Set dynamic page title per section
+  useEffect(() => { setPageTitle(dashboardSection) }, [dashboardSection])
+
   /* ── Dropdown state — only one open at a time ─────────────────────── */
   const [openDropdown, setOpenDropdown] = useState<'simulate' | 'profile' | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState(false)
@@ -89,7 +93,7 @@ export default function PersonalizedDashboard() {
     return () => document.removeEventListener('mousedown', handler)
   }, [openDropdown])
 
-  /* ── Simulate hover handlers (120ms close delay) ──────────────────── */
+  /* ── Simulate hover handlers (150ms close grace period) ──────────── */
   const openSimulate = useCallback(() => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
     setOpenDropdown('simulate')
@@ -98,7 +102,7 @@ export default function PersonalizedDashboard() {
   const scheduleCloseSimulate = useCallback(() => {
     closeTimerRef.current = setTimeout(() => {
       setOpenDropdown(prev => prev === 'simulate' ? null : prev)
-    }, 120)
+    }, 150)
   }, [])
 
   const keepSimulateOpen = useCallback(() => {
@@ -112,7 +116,7 @@ export default function PersonalizedDashboard() {
     setMobileDrawer(false)
   }, [setDashboardSection])
 
-  /* ── Section renderer (unchanged) ─────────────────────────────────── */
+  /* ── Section renderer ─────────────────────────────────────────────── */
   function renderSection() {
     switch (dashboardSection) {
       case 'home':        return <DashboardHome key="home" />
@@ -121,9 +125,12 @@ export default function PersonalizedDashboard() {
       case 'time-machine':return <TimeMachinePage key="time-machine" />
       case 'sandbox':     return <Sandbox key="sandbox" />
       case 'harvest':     return <HarvestRoom key="harvest" />
+      case 'historical':  return <HistoricalSimulators key="historical" />
       case 'learn':       return <LearnPage key="learn" />
+      case 'compare':     return <ComparePage key="compare" />
+      case 'calculators': return <CalculatorsPage key="calculators" />
       case 'fear-profile':return <FearProfilePage key="fear-profile" />
-      case 'arjun':       return <ArjunPage key="arjun" />
+      case 'kinu':        return <KinuPage key="kinu" />
       case 'my-card':     return <MyCardPage key="my-card" />
       case 'profile':     return <ProfilePage key="profile" />
       default:            return <DashboardHome key="home" />
@@ -224,6 +231,31 @@ export default function PersonalizedDashboard() {
                         </div>
                       )
                     })}
+
+                    {/* ── HISTORICAL SIMULATORS divider + grouped item ── */}
+                    <div className="mx-3 my-1 flex items-center gap-2">
+                      <div className="flex-1" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+                      <span className="font-sans text-[9px] font-bold tracking-[0.15em] text-white/20 uppercase whitespace-nowrap">Historical Simulators</span>
+                      <div className="flex-1" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+                    </div>
+                    <button
+                      onClick={() => nav('historical')}
+                      className="w-full flex items-start gap-3 text-left transition-[background-color] duration-150"
+                      style={{ padding: '10px 14px', borderRadius: 10 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {/* Two overlapping circles icon */}
+                      <div className="relative w-4 h-4 mt-0.5 shrink-0">
+                        <div className="absolute top-0 left-0 w-3 h-3 rounded-full border" style={{ borderColor: 'var(--accent)', opacity: 0.7 }} />
+                        <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border" style={{ borderColor: '#1D9E75', opacity: 0.7 }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-sans text-[14px] text-white leading-tight">Sandbox / Harvest Room</p>
+                        <p className="font-sans text-[11px] leading-tight mt-0.5" style={{ color: 'var(--text-secondary)' }}>Invest in any year · Plant money across eras</p>
+                      </div>
+                      <span className="font-sans text-[9px] px-2 py-0.5 rounded-full mt-0.5 shrink-0" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>2 tools</span>
+                    </button>
                   </div>
                 </motion.div>
               )}
@@ -233,8 +265,8 @@ export default function PersonalizedDashboard() {
           {/* Learn */}
           <NavItem label="Learn" active={activeTab === 'learn'} onClick={() => nav('learn')} />
 
-          {/* Arjun */}
-          <NavItem label="Arjun" active={activeTab === 'arjun'} onClick={() => nav('arjun')} />
+          {/* KINU */}
+          <NavItem label="KINU" active={activeTab === 'kinu'} onClick={() => nav('kinu')} />
 
           {/* Portfolio */}
           <NavItem label="Portfolio" active={activeTab === 'portfolio'} onClick={() => nav('portfolio')} />
@@ -247,20 +279,19 @@ export default function PersonalizedDashboard() {
           <div className="hidden md:block relative" ref={profileRef}>
             <button
               onClick={() => setOpenDropdown(prev => prev === 'profile' ? null : 'profile')}
-              className="transition-[transform,border-color] duration-150"
+              className="transition-all duration-150"
               style={{
-                width: 34, height: 34, borderRadius: '50%',
+                width: 36, height: 36, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: isAuthenticated ? `${ftColor}33` : 'transparent',
-                border: `1.5px solid ${isAuthenticated ? `${ftColor}99` : 'rgba(255,255,255,0.2)'}`,
+                background: isAuthenticated ? `${ftColor}33` : 'rgba(255,255,255,0.06)',
+                border: `1.5px solid ${isAuthenticated ? `${ftColor}99` : 'rgba(255,255,255,0.15)'}`,
+                boxShadow: openDropdown === 'profile' ? `0 0 0 3px ${ftColor}66` : 'none',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = isAuthenticated ? ftColor : 'rgba(255,255,255,0.5)'
-                e.currentTarget.style.transform = 'scale(1.04)'
+                if (openDropdown !== 'profile') e.currentTarget.style.boxShadow = `0 0 0 3px ${ftColor}33`
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.borderColor = isAuthenticated ? `${ftColor}99` : 'rgba(255,255,255,0.2)'
-                e.currentTarget.style.transform = 'scale(1)'
+                if (openDropdown !== 'profile') e.currentTarget.style.boxShadow = 'none'
               }}
             >
               {isAuthenticated ? (
@@ -318,7 +349,7 @@ export default function PersonalizedDashboard() {
                       <ProfileRow icon={<BarChart3 className="w-[14px] h-[14px]" style={{ color: 'var(--teal)' }} />}
                         label="Fear overcome" value={`${fearProgress || 0}%`} onClick={() => nav('fear-profile')} />
                       <ProfileRow icon={<Check className="w-[14px] h-[14px]" style={{ color: 'var(--teal)' }} />}
-                        label="Modules done" value={`${completedModules?.length || 0}`} onClick={() => nav('learn')} />
+                        label="Modules done" value={`${[...new Set(completedModules || [])].filter(m => m.startsWith(fearType)).length} of 10`} onClick={() => nav('learn')} />
                     </div>
 
                     <Divider />
@@ -340,10 +371,10 @@ export default function PersonalizedDashboard() {
                           onClick={() => { signOut(); setView('landing'); setOpenDropdown(null) }}
                           className="w-full flex items-center gap-3 text-left transition-[background-color] duration-150"
                           style={{ padding: '8px 10px', borderRadius: 8, color: 'var(--danger)' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(226,75,74,0.06)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <LogOut className="w-[14px] h-[14px]" />
+                          <LogOut className="w-[14px] h-[14px]" style={{ color: 'var(--danger)' }} />
                           <span className="font-sans text-[13px] font-medium">Sign out</span>
                         </button>
                       ) : (
@@ -426,7 +457,7 @@ export default function PersonalizedDashboard() {
                 </div>
 
                 <MobileNavItem label="Learn" active={activeTab === 'learn'} onClick={() => nav('learn')} />
-                <MobileNavItem label="Arjun" active={activeTab === 'arjun'} onClick={() => nav('arjun')} />
+                <MobileNavItem label="KINU" active={activeTab === 'kinu'} onClick={() => nav('kinu')} />
                 <MobileNavItem label="Portfolio" active={activeTab === 'portfolio'} onClick={() => nav('portfolio')} />
               </div>
 
@@ -489,7 +520,7 @@ export default function PersonalizedDashboard() {
         </div>
       </main>
 
-      {dashboardSection !== 'arjun' && <ArjunFloatingButton />}
+      {dashboardSection !== 'kinu' && <KinuFloatingButton />}
     </div>
   )
 }

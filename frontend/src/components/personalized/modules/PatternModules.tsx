@@ -106,7 +106,7 @@ function RedFlagDetector() {
         ))}
       </div>
 
-      <p className="text-[10px] font-sans text-white/25 mt-4">Tap any row to ask Arjun for more details.</p>
+      <p className="text-[10px] font-sans text-white/25 mt-4">Tap any row to ask KINU for more details.</p>
     </motion.div>
   )
 }

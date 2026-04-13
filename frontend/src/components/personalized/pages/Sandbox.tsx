@@ -7,8 +7,8 @@ import {
   getAllFYKeys, getFYLabel, getFYHumanLabel, getFYMonthYear, getFYEvent,
   simulateFY, type FYAssetReturns,
   getWhispers, type Whisper,
-  FY_ARJUN_CONTEXT, FY_OPTIMAL_ALLOCATION, FY_CRASH_RECOVERY,
-  getRecoveryContext, hasCryptoData, CRYPTO_RETURNS,
+  FY_KINU_CONTEXT, FY_OPTIMAL_ALLOCATION, FY_CRASH_RECOVERY,
+  getRecoveryContext, hasCryptoData,
 } from '../../../lib/sandboxData'
 import { getActiveCrash, getCrashForFYMonth, type CrashEvent } from '../../../lib/crashData'
 import { Play, Pause, RotateCcw, ChevronRight, Zap, Lock, Eye, AlertTriangle } from 'lucide-react'
@@ -278,7 +278,7 @@ export default function Sandbox() {
       allocation: alloc,
       finalValue: totalValue,
       totalInvested: BUDGET,
-      arjunDebrief: debriefInstinct + '\n\n' + debriefAdvice,
+      kinuDebrief: debriefInstinct + '\n\n' + debriefAdvice,
       didPullOut: pulledOut,
     })
   }
@@ -885,7 +885,7 @@ export default function Sandbox() {
                     </div>
                     <div className="rounded-3xl p-5 border flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                       <p className="font-sans text-[10px] text-white/20 uppercase tracking-wider mb-2">What happened this year</p>
-                      <p className="font-sans text-sm text-white/60 leading-relaxed">{FY_ARJUN_CONTEXT[selectedFY] || 'Market conditions varied throughout this year.'}</p>
+                      <p className="font-sans text-sm text-white/60 leading-relaxed">{FY_KINU_CONTEXT[selectedFY] || 'Market conditions varied throughout this year.'}</p>
                     </div>
                   </motion.div>
                 )}
@@ -903,7 +903,7 @@ export default function Sandbox() {
                       {debriefInstinctLoading ? (
                         <div className="flex items-center gap-2">
                           <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-                          <p className="font-sans text-sm text-white/30">Arjun is thinking...</p>
+                          <p className="font-sans text-sm text-white/30">KINU is thinking...</p>
                         </div>
                       ) : (
                         <p className="font-sans text-sm text-white/60 leading-relaxed">{debriefInstinct}</p>
@@ -925,7 +925,7 @@ export default function Sandbox() {
                       {debriefAdviceLoading ? (
                         <div className="flex items-center gap-2">
                           <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)' }} />
-                          <p className="font-sans text-sm text-white/30">Arjun is thinking...</p>
+                          <p className="font-sans text-sm text-white/30">KINU is thinking...</p>
                         </div>
                       ) : (
                         <p className="font-sans text-sm text-white/60 leading-relaxed">{debriefAdvice}</p>

@@ -42,7 +42,7 @@ const REVIEWS: Review[] = [
   {
     id: 3, badge: 'Pattern Detector', badgeColor: 'var(--accent)',
     quote: "Three WhatsApp groups had 'guaranteed 40% returns.' Kinetic showed me exactly why those are scams.",
-    name: 'Arjun S.', role: 'Marketing Manager, Mumbai',
+    name: 'Priya K.', role: 'Marketing Manager, Mumbai',
   },
   {
     id: 4, badge: 'Independence Guardian', badgeColor: 'var(--teal)',
@@ -51,7 +51,7 @@ const REVIEWS: Review[] = [
   },
   {
     id: 5, badge: 'Loss Avoider', badgeColor: 'var(--danger)',
-    quote: 'I ran the Time Machine from 2015. Watched my virtual ₹500 drop during COVID. Then watched it come back.',
+    quote: 'I ran the Time Machine from 2015. Watched my virtual ₹100 drop during COVID. Then watched it come back.',
     name: 'Priya V.', role: 'CA Intern, Delhi',
   },
   {
@@ -66,7 +66,7 @@ const REVIEWS: Review[] = [
   },
   {
     id: 8, badge: 'Independence Guardian', badgeColor: 'var(--teal)',
-    quote: "Index fund. 0.1% expense ratio. ₹500 a month. Kinetic made a 3-step plan feel obvious.",
+    quote: "Index fund. 0.1% expense ratio. ₹100 a month. Kinetic made a 3-step plan feel obvious.",
     name: 'Vivek N.', role: 'Product Manager, Gurugram',
   },
   {
@@ -86,7 +86,7 @@ const REVIEWS: Review[] = [
   },
   {
     id: 12, badge: 'Independence Guardian', badgeColor: 'var(--teal)',
-    quote: "Started with ₹500/month. Seeing my SIP grow in real-time changed everything about how I think about money.",
+    quote: "Started with ₹100/month. Seeing my SIP grow in real-time changed everything about how I think about money.",
     name: 'Nikhil P.', role: 'Junior Developer, Noida',
   },
 ]
@@ -438,7 +438,7 @@ function DesktopScrollReviews() {
             </p>
           </div>
           <p className="text-lg mt-8" style={{ color: 'var(--text-secondary)' }}>
-            Your turn. Start with ₹500.
+            Your turn. Start with ₹100.
           </p>
         </div>
 

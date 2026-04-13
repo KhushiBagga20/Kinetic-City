@@ -5,6 +5,8 @@ import FearProgressBar from './shared/FearProgressBar'
 import StreakTracker from './shared/StreakTracker'
 import PortfolioPulse from './PortfolioPulse'
 import MarketPulseBoard from './MarketPulseBoard'
+import SeasonalPatterns from './SeasonalPatterns'
+import GoalsSection from './goals/GoalsSection'
 import FearQuote from './shared/FearQuote'
 import MarketNewsFeed from '../news/MarketNewsFeed'
 import NewsTickerBar from '../news/NewsTickerBar'
@@ -171,6 +173,9 @@ export default function DashboardHome() {
           {/* ── Market Pulse Board ──────────────────────────────────── */}
           <MarketPulseBoard />
 
+          {/* ── Seasonal Patterns ─────────────────────────────────────── */}
+          <SeasonalPatterns />
+
           {/* ── Market News Feed ─────────────────────────────────────── */}
           <MarketNewsFeed maxItems={5} fearType={fearType} />
 
@@ -243,6 +248,9 @@ export default function DashboardHome() {
           {/* ── Fear Progress ────────────────────────────────────────── */}
           <FearProgressBar />
 
+          {/* ── Goals ─────────────────────────────────────────────── */}
+          <GoalsSection />
+
           {/* ── Today's Micro Action ──────────────────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -256,8 +264,8 @@ export default function DashboardHome() {
             </div>
             <h3 className="font-display font-bold text-2xl mb-2" style={{ color: 'var(--accent)' }}>{dailyTerm.term}</h3>
             <p className="font-sans text-[13px] text-white/50 leading-relaxed mb-3">{dailyTerm.def}</p>
-            <button onClick={() => setDashboardSection('arjun')} className="font-sans text-[10px] text-white/20 hover:text-white/40 transition-[color] duration-200">
-              Ask Arjun to explain it differently →
+            <button onClick={() => setDashboardSection('kinu')} className="font-sans text-[10px] text-white/20 hover:text-white/40 transition-[color] duration-200">
+              Ask KINU to explain it differently →
             </button>
           </motion.div>
 
@@ -284,7 +292,7 @@ export default function DashboardHome() {
             ))}
           </div>
 
-          {/* ── Arjun Daily Insight ────────────────────────────────────── */}
+          {/* ── KINU Daily Insight ────────────────────────────────────── */}
           <FearQuote context="dashboard" variant="card" />
 
           {/* ── Jargon Graveyard ───────────────────────────────────────── */}

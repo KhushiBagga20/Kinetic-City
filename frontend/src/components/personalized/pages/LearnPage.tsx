@@ -90,7 +90,7 @@ const ROADMAP_STEPS: Omit<RoadmapStep, 'status'>[] = [
   { step: 2, title: 'Learn the basics', description: 'Kill 10 jargon words from the glossary', icon: BookOpen },
   { step: 3, title: 'See the math', description: 'Run your first SIP simulation', icon: Zap },
   { step: 4, title: 'Survive a crash', description: 'Complete the Time Machine experience', icon: Target },
-  { step: 5, title: 'Ask your doubts', description: 'Have your first conversation with Arjun', icon: Map },
+  { step: 5, title: 'Ask your doubts', description: 'Have your first conversation with KINU', icon: Map },
   { step: 6, title: 'Start investing', description: 'Open a demat account → Start ₹500 SIP', icon: Target },
 ]
 
@@ -117,7 +117,7 @@ function getModulesForFear(fearType: FearType): Module[] {
       { id: 'clarity-2', title: 'How your ₹500 actually travels', readTime: '4 min', content: <MoneyFlow /> },
       { id: 'clarity-3', title: 'Reading a fund page', readTime: '5 min', content: <FundFactSheet /> },
       { id: 'clarity-4', title: 'XIRR vs CAGR — what your money actually earned', readTime: '5 min', content: <ActiveVsPassive /> },
-      { id: 'clarity-5', title: 'Ask Arjun your most embarrassing question', readTime: '3 min', content: <AskArjun /> },
+      { id: 'clarity-5', title: 'Ask KINU your most embarrassing question', readTime: '3 min', content: <AskKinu /> },
     ]
     case 'scam': return [
       { id: 'pattern-1', title: 'How to spot a scam in 10 seconds', readTime: '6 min', content: <RedFlagQuiz /> },
@@ -136,7 +136,7 @@ function getModulesForFear(fearType: FearType): Module[] {
   }
 }
 
-// ── Crash History Module with timeline, stats, and Arjun insight ─────────────
+// ── Crash History Module with timeline, stats, and KINU insight ─────────────
 
 function TypewriterText({ text, delay = 30 }: { text: string; delay?: number }) {
   const [displayed, setDisplayed] = useState('')
@@ -331,10 +331,10 @@ function ActiveVsPassive() {
   )
 }
 
-function AskArjun() {
+function AskKinu() {
   return (
     <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">Ask Arjun your most confusing question. He explains everything without jargon.</p>
+      <p className="font-sans text-sm text-white/60 leading-relaxed">Ask KINU your most confusing question. He explains everything without jargon.</p>
       <p className="font-sans text-xs text-white/40">Pro tip: Start with the terms you haven't learned yet from the Glossary.</p>
     </div>
   )
@@ -506,6 +506,7 @@ export default function LearnPage() {
   const completeModule = useAppStore(s => s.completeModule)
   const simulationResult = useAppStore(s => s.simulationResult)
   const timeMachineResult = useAppStore(s => s.timeMachineResult)
+  const setDashboardSection = useAppStore(s => s.setDashboardSection)
 
   const [activeTab, setActiveTab] = useState<'roadmap' | 'glossary' | 'modules'>('modules')
   const [activeModule, setActiveModule] = useState(0)
@@ -551,6 +552,36 @@ export default function LearnPage() {
       {/* News Impact Card */}
       <div className="mb-6">
         <NewsImpactCard context="learn" fearType={fearType} />
+      </div>
+
+      {/* Calculator Tools */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <button
+          onClick={() => setDashboardSection('compare')}
+          className="rounded-2xl p-5 border text-left transition-all duration-200 hover:border-white/12 group"
+          style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(55,138,221,0.08)' }}>
+              <span className="text-sm">📊</span>
+            </div>
+            <h3 className="font-sans text-sm font-medium text-white/70 group-hover:text-white transition-colors">SIP vs FD vs Lumpsum</h3>
+          </div>
+          <p className="font-sans text-xs text-white/30">Compare 14% Nifty CAGR against fixed deposits. Interactive chart.</p>
+        </button>
+        <button
+          onClick={() => setDashboardSection('calculators')}
+          className="rounded-2xl p-5 border text-left transition-all duration-200 hover:border-white/12 group"
+          style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(192,241,142,0.08)' }}>
+              <span className="text-sm">🧮</span>
+            </div>
+            <h3 className="font-sans text-sm font-medium text-white/70 group-hover:text-white transition-colors">SIP & SWP Calculators</h3>
+          </div>
+          <p className="font-sans text-xs text-white/30">Plan your wealth building. Step-up SIP, withdrawal planning, breakeven rates.</p>
+        </button>
       </div>
 
       {/* Tab bar */}

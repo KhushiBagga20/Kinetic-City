@@ -32,7 +32,7 @@ export interface SandboxResult {
   allocation: { nifty: number; midcap: number; smallcap: number; debt: number }
   finalValue: number
   totalInvested: number
-  arjunDebrief: string
+  kinuDebrief: string
   didPullOut: boolean
 }
 
@@ -43,8 +43,32 @@ export interface HarvestResult {
   allocation: Record<string, number>
   finalValue: number
   totalInvested: number
-  arjunInsights: string
+  kinuInsights: string
   date: string
+}
+
+export interface Goal {
+  id: string
+  name: string
+  targetAmount: number
+  targetYears: number
+  category: 'emergency' | 'car' | 'house' | 'retirement' | 'wedding' | 'education' | 'other'
+  requiredMonthlySIP: number
+  currentValue: number
+  createdAt: string
+  linkedSIPAmount: number
+}
+
+export interface ManualHolding {
+  id: string
+  type: 'index_fund' | 'stock' | 'debt_fund' | 'gold_etf'
+  name: string
+  symbol?: string
+  amountInvested: number
+  units?: number
+  buyDate: string
+  buyNav?: number
+  buyPrice?: number
 }
 
 // ── Store types ─────────────────────────────────────────────────────────────
@@ -169,8 +193,24 @@ interface AppState {
   newsLastFetched: number | null
 
   // ── Convenience aliases ──────────────────────────────────────────────────────────
-  setSipSetupDate: (v: string) => void   // alias for setPortfolioSetupDate
-  resetForNewUser: () => void             // resets progress while keeping profile
+  setSipSetupDate: (v: string) => void
+  resetForNewUser: () => void
+
+  // ── Goals ──────────────────────────────────────────────────────────────────
+  goals: Goal[]
+  activeGoalId: string | null
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'requiredMonthlySIP' | 'currentValue'>) => void
+  updateGoalProgress: (id: string, currentValue: number) => void
+  removeGoal: (id: string) => void
+
+  // ── Manual Portfolio ────────────────────────────────────────────────────────
+  manualHoldings: ManualHolding[]
+  addHolding: (holding: Omit<ManualHolding, 'id'>) => void
+  removeHolding: (id: string) => void
+
+  // ── Watchlist ──────────────────────────────────────────────────────────────
+  watchlist: string[]
+  toggleWatchlist: (symbol: string) => void
 
   // ── Reset ─────────────────────────────────────────────────────────────────
   reset: () => void
@@ -238,10 +278,11 @@ export const useAppStore = create<AppState>()(
       completedModules: [],
       completeModule: (moduleId, fearProgressIncrement) => {
         const s = get()
-        if (s.completedModules.includes(moduleId)) return
+        const deduped = [...new Set(s.completedModules)]
+        if (deduped.includes(moduleId)) return
         const increment = fearProgressIncrement ?? 10
         set({
-          completedModules: [...s.completedModules, moduleId],
+          completedModules: [...deduped, moduleId],
           fearProgress: Math.min(100, s.fearProgress + increment),
         })
       },
@@ -321,12 +362,51 @@ export const useAppStore = create<AppState>()(
         lastVisitDate: '', dashboardSection: 'home', harvestResults: [],
       }),
 
+      // ── Goals ────────────────────────────────────────────────────────────────
+      goals: [],
+      activeGoalId: null,
+      addGoal: (goalInput) => {
+        const r = 0.14 / 12
+        const n = goalInput.targetYears * 12
+        const requiredMonthlySIP = goalInput.targetAmount / (((Math.pow(1 + r, n) - 1) / r) * (1 + r))
+        const goal: Goal = {
+          ...goalInput,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          requiredMonthlySIP: Math.round(requiredMonthlySIP),
+          currentValue: 0,
+        }
+        set({ goals: [...get().goals, goal] })
+      },
+      updateGoalProgress: (id, currentValue) => set({
+        goals: get().goals.map(g => g.id === id ? { ...g, currentValue } : g),
+      }),
+      removeGoal: (id) => set({ goals: get().goals.filter(g => g.id !== id) }),
+
+      // ── Manual Portfolio ──────────────────────────────────────────────────────
+      manualHoldings: [],
+      addHolding: (holdingInput) => {
+        const holding: ManualHolding = {
+          ...holdingInput,
+          id: crypto.randomUUID(),
+        }
+        set({ manualHoldings: [...get().manualHoldings, holding] })
+      },
+      removeHolding: (id) => set({ manualHoldings: get().manualHoldings.filter(h => h.id !== id) }),
+
+      // ── Watchlist ──────────────────────────────────────────────────────────────
+      watchlist: [],
+      toggleWatchlist: (symbol) => {
+        const current = get().watchlist
+        set({ watchlist: current.includes(symbol) ? current.filter(s => s !== symbol) : [...current, symbol] })
+      },
+
       // ── Reset ───────────────────────────────────────────────────────────────
       reset: () => set({
         view: 'landing', step: 0, fearType: null, userName: '', fearProgress: 0,
         completedModules: [], simulationResult: null, timeMachineResult: null,
         sandboxResult: null, streakDays: 0, lastVisitDate: '', dashboardSection: 'home',
-        harvestResults: [], cryptoEnabled: false,
+        harvestResults: [], cryptoEnabled: false, goals: [], manualHoldings: [], watchlist: [],
       }),
 
       // ── Dashboard Data (returning user) ─────────────────────────────────────
@@ -401,6 +481,10 @@ export const useAppStore = create<AppState>()(
         cryptoEnabled: state.cryptoEnabled,
         // Fix 6 — Harvest
         harvestResults: state.harvestResults,
+        // Goals & Portfolio
+        goals: state.goals,
+        manualHoldings: state.manualHoldings,
+        watchlist: state.watchlist,
       }),
     }
   )
