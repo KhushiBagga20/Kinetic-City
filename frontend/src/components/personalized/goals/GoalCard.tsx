@@ -23,14 +23,16 @@ function sipFV(monthly: number, annualRate: number, years: number): number {
 export default function GoalCard({ goal }: { goal: Goal }) {
   const removeGoal = useAppStore(s => s.removeGoal)
 
-  // Calculate progress
+  // Calculate progress — with guards for brand-new goals (monthsElapsed === 0)
   const createdAt = new Date(goal.createdAt)
   const now = new Date()
   const monthsElapsed = Math.max(0,
     (now.getFullYear() - createdAt.getFullYear()) * 12 + (now.getMonth() - createdAt.getMonth())
   )
-  const currentValue = sipFV(goal.linkedSIPAmount, 0.14, monthsElapsed / 12)
-  const progress = Math.min(100, (currentValue / goal.targetAmount) * 100)
+  const rawCurrentValue = monthsElapsed > 0 ? sipFV(goal.linkedSIPAmount, 0.14, monthsElapsed / 12) : 0
+  const currentValue = isNaN(rawCurrentValue) || !isFinite(rawCurrentValue) ? 0 : rawCurrentValue
+  const rawProgress = goal.targetAmount > 0 ? Math.min(100, (currentValue / goal.targetAmount) * 100) : 0
+  const progress = isNaN(rawProgress) || !isFinite(rawProgress) ? 0 : rawProgress
   const yearsRemaining = Math.max(0, goal.targetYears - monthsElapsed / 12)
   const onTrack = goal.linkedSIPAmount >= goal.requiredMonthlySIP
   const shortfall = goal.requiredMonthlySIP - goal.linkedSIPAmount

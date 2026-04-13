@@ -3,7 +3,8 @@ import { useState, useMemo } from 'react'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import FearProgressBar from './shared/FearProgressBar'
 import StreakTracker from './shared/StreakTracker'
-import PortfolioPulse from './PortfolioPulse'
+import NextStepCard from './NextStepCard'
+import LearnShortcutCard from './LearnShortcutCard'
 import MarketPulseBoard from './MarketPulseBoard'
 import SeasonalPatterns from './SeasonalPatterns'
 import GoalsSection from './goals/GoalsSection'
@@ -167,8 +168,11 @@ export default function DashboardHome() {
         {/* ═══ LEFT COLUMN ═══════════════════════════════════════════ */}
         <div className="space-y-6">
 
-          {/* ── Portfolio Pulse ──────────────────────────────────────── */}
-          <PortfolioPulse />
+          {/* ── Your Next Step ──────────────────────────────────────── */}
+          <NextStepCard />
+
+          {/* ── Learn Quick Access ────────────────────────────────── */}
+          <LearnShortcutCard />
 
           {/* ── Market Pulse Board ──────────────────────────────────── */}
           <MarketPulseBoard />

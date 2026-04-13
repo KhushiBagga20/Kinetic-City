@@ -626,19 +626,25 @@ function ActivePortfolio() {
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const newsItems = useAppStore(s => s.newsItems) || []
 
-  // Calculate months since portfolio setup
+  // Calculate months since portfolio setup — source: portfolioSetupDate from Zustand, set when user completes Start Investing flow
   const monthsSinceSetup = useMemo(() => {
-    if (!portfolioSetupDate) return 24 // default
+    if (!portfolioSetupDate) return 0
     const setupDate = new Date(portfolioSetupDate)
     const now = new Date()
-    return Math.max(1, (now.getFullYear() - setupDate.getFullYear()) * 12 + now.getMonth() - setupDate.getMonth()) + 24 // +24 for hackathon simulation depth
+    return Math.max(0, (now.getFullYear() - setupDate.getFullYear()) * 12 + now.getMonth() - setupDate.getMonth())
   }, [portfolioSetupDate])
 
-  // Generate simulated portfolio data
-  const fullPath = useMemo(() => generateSimulatedPath(monthsSinceSetup, monthlyAmount), [monthsSinceSetup, monthlyAmount])
+  // For brand new users: show just the monthly amount with 0% return
+  const isNewPortfolio = monthsSinceSetup < 3
 
-  const currentValue = fullPath[fullPath.length - 1] || 0
-  const totalInvested = monthlyAmount * fullPath.length
+  // Generate simulated portfolio data — uses monthsSinceSetup to determine how many months of data to show
+  const fullPath = useMemo(() => {
+    if (monthsSinceSetup === 0) return [monthlyAmount]
+    return generateSimulatedPath(monthsSinceSetup, monthlyAmount)
+  }, [monthsSinceSetup, monthlyAmount])
+
+  const currentValue = monthsSinceSetup === 0 ? monthlyAmount : (fullPath[fullPath.length - 1] || monthlyAmount)
+  const totalInvested = monthsSinceSetup === 0 ? monthlyAmount : monthlyAmount * fullPath.length
   const returns = currentValue - totalInvested
   const returnsPct = totalInvested > 0 ? ((currentValue / totalInvested - 1) * 100) : 0
   const isPositive = returns >= 0
@@ -723,22 +729,25 @@ function ActivePortfolio() {
     chartRef.current.timeScale().fitContent()
   }, [chartData])
 
-  // Holdings
+  // Holdings — sorted by weight descending (highest allocation first)
   const holdings = useMemo(() => {
     const h = getHoldingsForFund(selectedFund)
-    return h.map(holding => {
-      const value = currentValue * (holding.weight / 100)
-      const dayChange = (Math.random() - 0.4) * 3 // slight upward bias
-      return { ...holding, value, dayChange }
-    })
+    return h
+      .map(holding => {
+        const value = currentValue * (holding.weight / 100)
+        const dayChange = (Math.random() - 0.4) * 3 // slight upward bias
+        return { ...holding, value, dayChange }
+      })
+      .sort((a, b) => b.weight - a.weight)
   }, [selectedFund, currentValue])
 
-  // Metrics
+  // Metrics — with NaN guards
+  const safeReturnsPct = isNaN(returnsPct) || !isFinite(returnsPct) ? 0 : returnsPct
   const metrics = [
-    { title: 'CURRENT VALUE', value: formatValue(currentValue), subtext: `${isPositive ? '+' : ''}${returnsPct.toFixed(1)}% all time`, highlight: true },
+    { title: 'CURRENT VALUE', value: formatValue(currentValue), subtext: `${isPositive ? '+' : ''}${safeReturnsPct.toFixed(1)}% all time`, highlight: true },
     { title: 'TOTAL INVESTED', value: formatValue(totalInvested), subtext: `${fullPath.length} months`, highlight: false },
     { title: 'TOTAL RETURNS', value: `${isPositive ? '+' : ''}${formatValue(Math.abs(returns))}`, subtext: `${isPositive ? 'Profit' : 'Loss'}`, highlight: isPositive },
-    { title: 'XIRR', value: `${returnsPct > 0 ? '+' : ''}${(returnsPct * 0.85).toFixed(1)}%`, subtext: 'annualised return', highlight: true },
+    { title: 'XIRR', value: `${safeReturnsPct > 0 ? '+' : ''}${(safeReturnsPct * 0.85).toFixed(1)}%`, subtext: 'annualised return', highlight: true },
   ]
 
   const insight = FEAR_PORTFOLIO_INSIGHTS[fearType]
@@ -773,44 +782,71 @@ function ActivePortfolio() {
         ))}
       </div>
 
-      {/* Chart */}
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
-        className="rounded-3xl border overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-3">
-          <div>
-            <div className="flex items-center gap-3 mb-0.5">
-              <BarChart3 className="w-4 h-4 text-white/25" />
-              <h2 className="font-display text-base text-white font-medium tracking-tight">Performance</h2>
-              {chartData.length > 0 && (
-                <span className={`text-xs font-mono font-bold ${change >= 0 ? 'text-[var(--teal)]' : 'text-[var(--danger)]'}`}>
-                  {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                </span>
-              )}
+      {/* Chart — or empty state for new portfolios */}
+      {isNewPortfolio ? (
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+          className="rounded-3xl border p-8 text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+          <div className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center"
+            style={{ background: 'rgba(192,241,142,0.06)', border: '1px solid rgba(192,241,142,0.12)' }}>
+            <TrendingUp className="w-6 h-6" style={{ color: 'var(--accent)' }} />
+          </div>
+          <h3 className="font-display font-semibold text-xl text-white mb-2">Your portfolio starts here.</h3>
+          <p className="font-display font-bold text-2xl mb-4" style={{ color: 'var(--accent)' }}>
+            {formatValue(monthlyAmount)} invested today.
+          </p>
+          <p className="font-sans text-sm text-white/35 max-w-sm mx-auto mb-4 leading-relaxed">
+            Check back in 3 months to see your first growth chart.
+          </p>
+          <p className="font-sans text-xs text-white/20 italic max-w-sm mx-auto mb-6 leading-relaxed">
+            &ldquo;The best time to invest was 10 years ago.<br />The second best time is today.&rdquo;
+          </p>
+          <button
+            onClick={() => useAppStore.getState().setDashboardSection('simulation')}
+            className="font-sans text-[13px] font-medium transition-colors hover:opacity-80"
+            style={{ color: 'var(--accent)' }}
+          >
+            Here is what your portfolio could look like in 10 years →
+          </button>
+        </motion.div>
+      ) : (
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+          className="rounded-3xl border overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-3">
+            <div>
+              <div className="flex items-center gap-3 mb-0.5">
+                <BarChart3 className="w-4 h-4 text-white/25" />
+                <h2 className="font-display text-base text-white font-medium tracking-tight">Performance</h2>
+                {chartData.length > 0 && (
+                  <span className={`text-xs font-mono font-bold ${change >= 0 ? 'text-[var(--teal)]' : 'text-[var(--danger)]'}`}>
+                    {change >= 0 ? '+' : ''}{isNaN(change) || !isFinite(change) ? '0.00' : change.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+              <p className="font-sans text-[10px] text-white/20">
+                {tooltip ? <><span className="text-white/50 font-medium">{tooltip.value}</span> · {tooltip.date}</> : 'Hover the chart to explore'}
+              </p>
             </div>
-            <p className="font-sans text-[10px] text-white/20">
-              {tooltip ? <><span className="text-white/50 font-medium">{tooltip.value}</span> · {tooltip.date}</> : 'Hover the chart to explore'}
-            </p>
+            <div className="flex items-center gap-1">
+              {PERIODS.map(p => (
+                <button key={p} onClick={() => setPeriod(p)}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-sans font-semibold tracking-wider transition-all duration-150"
+                  style={{
+                    background: p === period ? 'rgba(192,241,142,0.08)' : 'transparent',
+                    color: p === period ? 'var(--accent)' : 'rgba(255,255,255,0.25)',
+                    border: p === period ? '1px solid rgba(192,241,142,0.15)' : '1px solid transparent',
+                  }}>
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            {PERIODS.map(p => (
-              <button key={p} onClick={() => setPeriod(p)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-sans font-semibold tracking-wider transition-all duration-150"
-                style={{
-                  background: p === period ? 'rgba(192,241,142,0.08)' : 'transparent',
-                  color: p === period ? 'var(--accent)' : 'rgba(255,255,255,0.25)',
-                  border: p === period ? '1px solid rgba(192,241,142,0.15)' : '1px solid transparent',
-                }}>
-                {p}
-              </button>
-            ))}
+          <div ref={containerRef} className="w-full" style={{ height: '300px' }} />
+          <div className="flex justify-between items-center px-6 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+            <span className="text-[9px] font-mono text-white/15 tracking-wider uppercase">Simulated · Based on Nifty 50 historical data</span>
+            <span className="text-[9px] font-mono text-white/15">{chartData.length > 0 ? formatValue(chartData[chartData.length - 1].value) : '—'}</span>
           </div>
-        </div>
-        <div ref={containerRef} className="w-full" style={{ height: '300px' }} />
-        <div className="flex justify-between items-center px-6 py-2.5 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          <span className="text-[9px] font-mono text-white/15 tracking-wider uppercase">Simulated · Based on Nifty 50 historical data</span>
-          <span className="text-[9px] font-mono text-white/15">{chartData.length > 0 ? formatValue(chartData[chartData.length - 1].value) : '—'}</span>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Holdings */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}

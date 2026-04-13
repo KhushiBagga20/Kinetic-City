@@ -448,6 +448,7 @@ export default function TimeMachinePage() {
                       <p className="font-sans text-[10px] text-white/20 mt-1">If enabled, the simulation will pause during historic market crashes.</p>
                     </div>
                     <button onClick={() => setPanicMode(!panicMode)}
+                      data-toggle
                       className="w-11 h-6 rounded-full relative transition-[background-color] duration-200"
                       style={{ background: panicMode ? 'rgba(192,241,142,0.25)' : 'rgba(255,255,255,0.08)' }}>
                       <motion.div

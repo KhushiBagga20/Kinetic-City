@@ -17,6 +17,7 @@ import HistoricalSimulators from './pages/HistoricalSimulators'
 import ComparePage from './pages/ComparePage'
 import CalculatorsPage from './pages/CalculatorsPage'
 import { setPageTitle } from '../../lib/pageTitles'
+import { getTrackForFear } from '../../lib/curriculumData'
 import {
   LineChart, Clock, ChevronDown, ChevronRight, X, User,
   LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check,
@@ -67,6 +68,10 @@ export default function PersonalizedDashboard() {
   const setView = useAppStore(s => s.setView)
   const fearProgress = useAppStore(s => s.fearProgress)
   const completedModules = useAppStore(s => s.completedModules)
+  // Canonical track IDs for counting — matches LearnPage exactly
+  const userTrack = fearType ? getTrackForFear(fearType) : []
+  const trackCompletedCount = userTrack.filter(m => (completedModules || []).includes(m.id)).length
+  const trackTotalModules = userTrack.length || 10
 
   useEffect(() => { updateStreak() }, [updateStreak])
 
@@ -349,7 +354,7 @@ export default function PersonalizedDashboard() {
                       <ProfileRow icon={<BarChart3 className="w-[14px] h-[14px]" style={{ color: 'var(--teal)' }} />}
                         label="Fear overcome" value={`${fearProgress || 0}%`} onClick={() => nav('fear-profile')} />
                       <ProfileRow icon={<Check className="w-[14px] h-[14px]" style={{ color: 'var(--teal)' }} />}
-                        label="Modules done" value={`${[...new Set(completedModules || [])].filter(m => m.startsWith(fearType)).length} of 10`} onClick={() => nav('learn')} />
+                        label="Modules done" value={`${trackCompletedCount} of ${trackTotalModules}`} onClick={() => nav('learn')} />
                     </div>
 
                     <Divider />

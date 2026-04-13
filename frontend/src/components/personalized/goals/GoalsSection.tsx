@@ -16,9 +16,16 @@ export default function GoalsSection() {
         <span className="font-mono text-[10px] text-white/15">{goals.length} {goals.length === 1 ? 'goal' : 'goals'}</span>
       </div>
 
-      {/* Goal cards */}
+      {/* Goal cards — or empty state */}
       <div className="space-y-3">
-        {goals.map(goal => <GoalCard key={goal.id} goal={goal} />)}
+        {goals.length === 0 ? (
+          <div className="rounded-2xl p-5 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+            <p className="font-sans text-sm text-white/35 mb-1">No goals yet.</p>
+            <p className="font-sans text-xs text-white/20">Goals help you track what your SIP is building toward.</p>
+          </div>
+        ) : (
+          goals.map(goal => <GoalCard key={goal.id} goal={goal} />)
+        )}
       </div>
 
       {/* Creation flow */}

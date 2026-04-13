@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
 import { postSandboxDebrief, postSandboxAdvice } from '../../../lib/api'
@@ -12,6 +12,39 @@ import {
 } from '../../../lib/sandboxData'
 import { getActiveCrash, getCrashForFYMonth, type CrashEvent } from '../../../lib/crashData'
 import { Play, Pause, RotateCcw, ChevronRight, Zap, Lock, Eye, AlertTriangle } from 'lucide-react'
+
+/* ── ErrorBoundary — catches render errors in Sandbox ─────────────────────── */
+class SandboxErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+  static getDerivedStateFromError() { return { hasError: true } }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[Sandbox] Render error:', error, info)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <div className="w-14 h-14 rounded-full mb-5 flex items-center justify-center"
+            style={{ background: 'rgba(226,75,74,0.06)', border: '1px solid rgba(226,75,74,0.15)' }}>
+            <AlertTriangle className="w-6 h-6" style={{ color: 'var(--danger)' }} />
+          </div>
+          <h3 className="font-display font-semibold text-lg text-white mb-2">Something went wrong</h3>
+          <p className="font-sans text-sm text-white/35 mb-6 max-w-sm">
+            The sandbox simulation encountered an error. Please try again.
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="px-6 py-3 rounded-full font-sans text-sm font-medium border transition-colors"
+            style={{ borderColor: 'var(--border)', color: 'var(--accent)' }}
+          >
+            <RotateCcw className="w-3.5 h-3.5 inline mr-2" /> Try Again
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 type Phase = 'setup' | 'playback' | 'crash-decision' | 'debrief'
 
@@ -26,7 +59,7 @@ const CRYPTO_ASSET = { key: 'crypto' as const, name: 'Crypto (BTC Proxy)', desc:
 
 const BUDGET = 50000
 
-export default function Sandbox() {
+function SandboxInner() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const userAge = useAppStore(s => s.userAge)
   const setSandboxResult = useAppStore(s => s.setSandboxResult)
@@ -414,9 +447,10 @@ export default function Sandbox() {
                   <p className="font-sans text-[10px] text-white/25">{cryptoAvailable ? 'BTC data available for this year' : 'Not available before 2014–15'}</p>
                 </div>
               </div>
-              <button
+                <button
                 onClick={() => setCryptoEnabled(!cryptoEnabled)}
                 disabled={!cryptoAvailable}
+                data-toggle
                 className="relative w-11 h-6 rounded-full transition-[background-color] duration-200"
                 style={{
                   background: cryptoEnabled && cryptoAvailable ? 'rgba(239,159,39,0.3)' : 'rgba(255,255,255,0.06)',
@@ -954,5 +988,14 @@ export default function Sandbox() {
 
       </AnimatePresence>
     </motion.div>
+  )
+}
+
+/* ── Public export — wrapped in ErrorBoundary ────────────────────────────── */
+export default function Sandbox() {
+  return (
+    <SandboxErrorBoundary>
+      <SandboxInner />
+    </SandboxErrorBoundary>
   )
 }

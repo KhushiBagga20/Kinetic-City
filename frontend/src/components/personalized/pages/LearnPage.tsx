@@ -100,38 +100,57 @@ interface Module {
   id: string
   title: string
   readTime: string
-  content: React.ReactNode
+  // Use a factory fn so component refs are resolved lazily at render time
+  content: () => React.ReactNode
 }
 
 function getModulesForFear(fearType: FearType): Module[] {
+  // Shared practical modules 6-10 — keyed by prefix
+  const shared6to10 = (prefix: string): Module[] => [
+    { id: `${prefix}-6`, title: "How KINETIC's simulators work", readTime: '5 min', content: () => <SimulatorsOverview /> },
+    { id: `${prefix}-7`, title: 'SIP vs Lumpsum vs FD — the comparison', readTime: '6 min', content: () => <SipVsFdComparison /> },
+    { id: `${prefix}-8`, title: 'Reading the Monte Carlo fan chart', readTime: '4 min', content: () => <MonteCarloExplainer /> },
+    {
+      id: `${prefix}-9`,
+      title: prefix === 'trust' ? 'The fee X-ray advanced' : prefix === 'pattern' ? 'Verify a real fund' : prefix === 'clarity' ? 'Build your first SIP calculation' : 'The ₹500 Time Machine',
+      readTime: '5 min',
+      content: () => prefix === 'trust' ? <FeeCalculatorAdvanced /> : prefix === 'pattern' ? <VerifyRealFund /> : prefix === 'clarity' ? <SipCalculatorLearn /> : <TimeMachineExplainer />,
+    },
+    { id: `${prefix}-10`, title: 'Set up your first goal', readTime: '3 min', content: () => <GoalSetupLearn /> },
+  ]
+
   switch (fearType) {
     case 'loss': return [
-      { id: 'loss-1', title: 'Why your brain is wired to lose', readTime: '4 min', content: <LossModule1 /> },
-      { id: 'loss-2', title: 'The crash survival record', readTime: '5 min', content: <LossModule2 /> },
-      { id: 'loss-3', title: 'SIP vs lump sum in a crisis', readTime: '8 min', content: <SipVsLumpsum /> },
-      { id: 'loss-4', title: 'The FD trap', readTime: '3 min', content: <FDTrap /> },
-      { id: 'loss-5', title: 'Your first ₹100', readTime: '3 min', content: <First100 /> },
+      { id: 'loss-1', title: 'Why your brain is wired to lose', readTime: '4 min', content: () => <LossModule1 /> },
+      { id: 'loss-2', title: 'The crash survival record', readTime: '5 min', content: () => <LossModule2 /> },
+      { id: 'loss-3', title: 'SIP vs lump sum in a crisis', readTime: '8 min', content: () => <SipVsLumpsum /> },
+      { id: 'loss-4', title: 'The FD trap', readTime: '3 min', content: () => <FDTrap /> },
+      { id: 'loss-5', title: 'Your first ₹100', readTime: '3 min', content: () => <First100 /> },
+      ...shared6to10('loss'),
     ]
     case 'jargon': return [
-      { id: 'clarity-1', title: 'The 20 words you need', readTime: '6 min', content: <SipExplainer /> },
-      { id: 'clarity-2', title: 'How your ₹500 actually travels', readTime: '4 min', content: <MoneyFlow /> },
-      { id: 'clarity-3', title: 'Reading a fund page', readTime: '5 min', content: <FundFactSheet /> },
-      { id: 'clarity-4', title: 'XIRR vs CAGR — what your money actually earned', readTime: '5 min', content: <ActiveVsPassive /> },
-      { id: 'clarity-5', title: 'Ask KINU your most embarrassing question', readTime: '3 min', content: <AskKinu /> },
+      { id: 'clarity-1', title: 'The 20 words you need', readTime: '6 min', content: () => <SipExplainer /> },
+      { id: 'clarity-2', title: 'How your ₹500 actually travels', readTime: '4 min', content: () => <MoneyFlow /> },
+      { id: 'clarity-3', title: 'Reading a fund page', readTime: '5 min', content: () => <FundFactSheet /> },
+      { id: 'clarity-4', title: 'XIRR vs CAGR — what your money actually earned', readTime: '5 min', content: () => <ActiveVsPassive /> },
+      { id: 'clarity-5', title: 'Ask KINU your most embarrassing question', readTime: '3 min', content: () => <AskKinu /> },
+      ...shared6to10('clarity'),
     ]
     case 'scam': return [
-      { id: 'pattern-1', title: 'How to spot a scam in 10 seconds', readTime: '6 min', content: <RedFlagQuiz /> },
-      { id: 'pattern-2', title: 'The wall that protects your money', readTime: '5 min', content: <SebiProtection /> },
-      { id: 'pattern-3', title: 'Verified: how your money is held', readTime: '4 min', content: <MoneyFlow /> },
-      { id: 'pattern-4', title: 'Due diligence checklist', readTime: '3 min', content: <DueDiligenceChecklist /> },
-      { id: 'pattern-5', title: 'Build your own verified portfolio', readTime: '8 min', content: <DataSources /> },
+      { id: 'pattern-1', title: 'How to spot a scam in 10 seconds', readTime: '6 min', content: () => <RedFlagQuiz /> },
+      { id: 'pattern-2', title: 'The wall that protects your money', readTime: '5 min', content: () => <SebiProtection /> },
+      { id: 'pattern-3', title: 'Verified: how your money is held', readTime: '4 min', content: () => <MoneyFlow /> },
+      { id: 'pattern-4', title: 'Due diligence checklist', readTime: '3 min', content: () => <DueDiligenceChecklist /> },
+      { id: 'pattern-5', title: 'Build your own verified portfolio', readTime: '8 min', content: () => <DataSources /> },
+      ...shared6to10('pattern'),
     ]
     case 'trust': return [
-      { id: 'trust-1', title: 'Why index funds need no humans', readTime: '4 min', content: <IndexFundExplainer /> },
-      { id: 'trust-2', title: 'The fee X-ray', readTime: '4 min', content: <FeeCalculator /> },
-      { id: 'trust-3', title: 'Active vs passive: the 20-year race', readTime: '6 min', content: <ActiveVsPassive /> },
-      { id: 'trust-4', title: 'GDP → Nifty → your portfolio', readTime: '4 min', content: <IndiaGrowth /> },
-      { id: 'trust-5', title: 'Your autonomous 3-fund portfolio', readTime: '6 min', content: <ZeroTrustStart /> },
+      { id: 'trust-1', title: 'Why index funds need no humans', readTime: '4 min', content: () => <IndexFundExplainer /> },
+      { id: 'trust-2', title: 'The fee X-ray', readTime: '4 min', content: () => <FeeCalculator /> },
+      { id: 'trust-3', title: 'Active vs passive: the 20-year race', readTime: '6 min', content: () => <ActiveVsPassive /> },
+      { id: 'trust-4', title: 'GDP → Nifty → your portfolio', readTime: '4 min', content: () => <IndiaGrowth /> },
+      { id: 'trust-5', title: 'Your autonomous 3-fund portfolio', readTime: '6 min', content: () => <ZeroTrustStart /> },
+      ...shared6to10('trust'),
     ]
   }
 }
@@ -498,6 +517,252 @@ function ZeroTrustStart() {
   )
 }
 
+// ── MODULES 6-10 CONTENT — KINETIC tool explainers ─────────────────────────
+
+function SimulatorsOverview() {
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">KINETIC has four interactive simulators — each teaches you something a textbook cannot.</p>
+      <div className="space-y-3">
+        {[
+          { name: 'Monte Carlo Simulation', desc: 'Run 1,000 futures of your SIP. See the range of outcomes — best, median, and worst.', emoji: '📈' },
+          { name: 'Time Machine', desc: 'Put ₹500/month through real Indian market history — 2008, 2011, 2020. See if you would have panicked.', emoji: '⏱' },
+          { name: 'Sandbox', desc: 'Allocate ₹50,000 across Nifty, Midcap, Smallcap and Debt for a specific year. Watch it play out month by month.', emoji: '🧪' },
+          { name: 'SIP vs FD Comparison', desc: 'Live, interactive comparison of SIP returns vs Fixed Deposit at current rates.', emoji: '⚖️' },
+        ].map(s => (
+          <div key={s.name} className="rounded-2xl p-4 border flex gap-3" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+            <span className="text-xl shrink-0">{s.emoji}</span>
+            <div>
+              <p className="font-sans text-sm font-medium text-white/80 mb-1">{s.name}</p>
+              <p className="font-sans text-xs text-white/40">{s.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="font-sans text-xs text-white/30 italic">You can access all simulators from the sidebar. Try the Monte Carlo first.</p>
+    </div>
+  )
+}
+
+function SipVsFdComparison() {
+  const [monthly, setMonthly] = useState(5000)
+  const years = 10
+  const sipResult = monthly * ((Math.pow(1.1164, years) - 1) / (1.1164 - 1)) * Math.pow(1.1164, 1)
+  const fdResult = monthly * 12 * years * Math.pow(1 + 0.068 / 12, years * 12) / (years * 12)
+  const fdSimple = monthly * 12 * years * 1.068
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">Adjust your monthly investment to see the 10-year difference.</p>
+      <div>
+        <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Monthly amount: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(monthly)}</label>
+        <input type="range" min={500} max={50000} step={500} value={monthly} onChange={e => setMonthly(Number(e.target.value))}
+          className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }} />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+          <p className="text-[9px] font-sans text-white/25 uppercase mb-2">FD at 6.8%</p>
+          <p className="font-display font-semibold text-lg" style={{ color: 'var(--danger)' }}>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(fdSimple)}</p>
+        </div>
+        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--teal)', borderWidth: '2px' }}>
+          <p className="text-[9px] font-sans text-white/25 uppercase mb-2">SIP at 14% CAGR</p>
+          <p className="font-display font-semibold text-lg" style={{ color: 'var(--teal)' }}>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(sipResult)}</p>
+        </div>
+      </div>
+      <p className="font-sans text-xs text-white/30">SIP invests monthly; each instalment compounds independently. The more time, the bigger the gap.</p>
+    </div>
+  )
+}
+
+function MonteCarloExplainer() {
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">The Monte Carlo simulation runs your SIP through <strong className="text-white">1,000 possible futures</strong> — each with different market conditions — and shows you the range of outcomes.</p>
+      <div className="rounded-2xl p-5 border space-y-3" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+        <p className="font-sans text-xs text-white/40 uppercase tracking-wider">How to read the fan chart</p>
+        {[
+          { label: 'P90 (top line)', desc: 'Best 10% of outcomes — bull market scenario', color: 'var(--teal)' },
+          { label: 'P50 (middle)', desc: 'The most likely outcome — median of 1,000 simulations', color: 'var(--accent)' },
+          { label: 'P10 (bottom line)', desc: 'Worst 10% — bear market / prolonged crash scenario', color: 'var(--danger)' },
+        ].map(r => (
+          <div key={r.label} className="flex items-start gap-3">
+            <div className="w-3 h-3 rounded-full shrink-0 mt-0.5" style={{ background: r.color }} />
+            <div>
+              <p className="font-sans text-xs font-medium text-white/70">{r.label}</p>
+              <p className="font-sans text-[10px] text-white/35">{r.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="font-sans text-xs text-white/30 italic">Even in the P10 worst case, your SIP typically beats an FD over 10+ years. That's the power of equity compounding.</p>
+    </div>
+  )
+}
+
+function TimeMachineExplainer() {
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">The Time Machine puts your ₹500/month SIP through actual Nifty 50 history — including every major crash.</p>
+      <div className="space-y-3">
+        {[
+          { year: 'FY2008', event: 'Global Financial Crisis', drop: '−52%', lesson: 'SIP investors who held through 2008 tripled their money by 2012.' },
+          { year: 'FY2020', event: 'COVID-19 Crash', drop: '−38%', lesson: 'The fastest crash recovery in history — Nifty recovered in 6 months.' },
+          { year: 'FY2011', event: 'Eurozone Crisis', drop: '−28%', lesson: 'Mid-term dip. SIP investors bought cheap units throughout.' },
+        ].map(r => (
+          <div key={r.year} className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+            <div className="flex justify-between items-start mb-1">
+              <p className="font-mono text-sm font-bold text-white">{r.year} — {r.event}</p>
+              <span className="font-mono text-xs" style={{ color: 'var(--danger)' }}>{r.drop}</span>
+            </div>
+            <p className="font-sans text-xs text-white/40">{r.lesson}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FeeCalculatorAdvanced() {
+  const [expense, setExpense] = useState(1.5)
+  const [monthly, setMonthly] = useState(10000)
+  const yrs = 20
+  const lowFee = 0.001
+  const highFee = expense / 100
+  const totalInvested = monthly * yrs * 12
+  const fv = (rate: number) => {
+    const r = (0.14 - rate) / 12
+    const n = yrs * 12
+    return monthly * ((Math.pow(1 + r, n) - 1) / r) * (1 + r)
+  }
+  const withLow = fv(lowFee)
+  const withHigh = fv(highFee)
+  const feeLost = withLow - withHigh
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">A higher expense ratio silently eats your corpus. Use this to see exactly how much you'd lose.</p>
+      <div className="space-y-3">
+        <div>
+          <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Monthly SIP: ₹{monthly.toLocaleString('en-IN')}</label>
+          <input type="range" min={1000} max={50000} step={1000} value={monthly} onChange={e => setMonthly(Number(e.target.value))}
+            className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+        <div>
+          <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Expense ratio to compare: {expense}%</label>
+          <input type="range" min={0.1} max={2.5} step={0.1} value={expense} onChange={e => setExpense(Number(e.target.value))}
+            className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--danger)', background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--danger)' }}>
+          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">At {expense}% fee</p>
+          <p className="font-display font-semibold text-base" style={{ color: 'var(--danger)' }}>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(withHigh)}</p>
+        </div>
+        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--teal)' }}>
+          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">At 0.1% fee</p>
+          <p className="font-display font-semibold text-base" style={{ color: 'var(--teal)' }}>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(withLow)}</p>
+        </div>
+      </div>
+      <p className="font-sans text-xs text-center" style={{ color: 'var(--danger)' }}>You would lose {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(feeLost)} to fees over 20 years.</p>
+    </div>
+  )
+}
+
+function VerifyRealFund() {
+  const checks = [
+    { q: 'Find the fund on AMFI India website', url: 'amfiindia.com', done: false },
+    { q: 'Check SEBI registration of the AMC', url: 'sebi.gov.in', done: false },
+    { q: 'Verify NAV is published daily', url: 'valueresearchonline.com', done: false },
+    { q: 'Confirm expense ratio below 1%', url: 'moneycontrol.com', done: false },
+    { q: 'Check custodian is a major Indian bank', url: 'camsrepository.com', done: false },
+  ]
+  const [checked, setChecked] = useState(checks.map(() => false))
+  const allDone = checked.every(Boolean)
+  return (
+    <div className="space-y-3">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">Practice verifying a real fund. Go through each step for any fund you're considering.</p>
+      {checks.map((c, i) => (
+        <button key={i} onClick={() => { const next = [...checked]; next[i] = !next[i]; setChecked(next) }}
+          className="w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-[border-color,background-color] duration-200"
+          style={{ background: checked[i] ? 'rgba(29,158,117,0.05)' : 'var(--surface)', borderColor: checked[i] ? 'rgba(29,158,117,0.2)' : 'var(--border)' }}>
+          <div className="w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5" style={{ borderColor: checked[i] ? 'var(--teal)' : 'var(--border)' }}>
+            {checked[i] && <Check className="w-3 h-3" style={{ color: 'var(--teal)' }} />}
+          </div>
+          <div>
+            <span className="font-sans text-sm" style={{ color: checked[i] ? 'var(--teal)' : 'rgba(255,255,255,0.5)' }}>{c.q}</span>
+            <p className="font-sans text-[10px] mt-0.5" style={{ color: 'var(--accent)' }}>{c.url} ↗</p>
+          </div>
+        </button>
+      ))}
+      {allDone && <p className="font-sans text-sm text-center" style={{ color: 'var(--teal)' }}>All verified — this is a safe, regulated fund. ✓</p>}
+    </div>
+  )
+}
+
+function SipCalculatorLearn() {
+  const [monthly, setMonthly] = useState(5000)
+  const [yrs, setYrs] = useState(10)
+  const r = 0.14 / 12
+  const n = yrs * 12
+  const fv = monthly * ((Math.pow(1 + r, n) - 1) / r) * (1 + r)
+  const invested = monthly * n
+  const gain = fv - invested
+  const fmt = (v: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v)
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">A live SIP calculator — see how compounding works at India's long-term Nifty 50 average of 14%.</p>
+      <div className="space-y-3">
+        <div>
+          <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Monthly SIP: {fmt(monthly)}</label>
+          <input type="range" min={500} max={50000} step={500} value={monthly} onChange={e => setMonthly(Number(e.target.value))}
+            className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+        <div>
+          <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Duration: {yrs} years</label>
+          <input type="range" min={1} max={30} step={1} value={yrs} onChange={e => setYrs(Number(e.target.value))}
+            className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+      </div>
+      <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+        <div className="flex justify-between mb-2">
+          <span className="font-sans text-xs text-white/40">Invested</span>
+          <span className="font-mono text-sm text-white/70">{fmt(invested)}</span>
+        </div>
+        <div className="flex justify-between mb-2">
+          <span className="font-sans text-xs text-white/40">Gains</span>
+          <span className="font-mono text-sm" style={{ color: 'var(--teal)' }}>{fmt(gain)}</span>
+        </div>
+        <div className="flex justify-between pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+          <span className="font-sans text-sm font-medium text-white">Total corpus</span>
+          <span className="font-display font-semibold text-lg" style={{ color: 'var(--accent)' }}>{fmt(fv)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GoalSetupLearn() {
+  return (
+    <div className="space-y-4">
+      <p className="font-sans text-sm text-white/60 leading-relaxed">A goal converts abstract "investing" into a concrete target — making it emotionally real and mathematically trackable.</p>
+      <div className="space-y-3">
+        {[
+          { goal: '₹15L home down payment', years: '5 years', sip: '₹18,500/month', emoji: '🏠' },
+          { goal: '₹3L emergency fund', years: '1 year', sip: '₹23,500/month', emoji: '🛡' },
+          { goal: '₹2Cr retirement corpus', years: '25 years', sip: '₹8,200/month', emoji: '☀️' },
+        ].map(g => (
+          <div key={g.goal} className="rounded-2xl p-4 border flex gap-3" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+            <span className="text-xl shrink-0">{g.emoji}</span>
+            <div className="flex-1">
+              <p className="font-sans text-sm font-medium text-white/80">{g.goal}</p>
+              <p className="font-sans text-[10px] text-white/35 mt-0.5">{g.years} · {g.sip}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="font-sans text-xs text-white/30 italic">Set up your own goal in the Portfolio section. It tracks your SIP progress toward each target.</p>
+    </div>
+  )
+}
+
 // ── MAIN LEARN PAGE ─────────────────────────────────────────────────────────
 
 export default function LearnPage() {
@@ -517,7 +782,9 @@ export default function LearnPage() {
 
   const modules = getModulesForFear(fearType)
   const curriculumTrack = getTrackForFear(fearType)
-  const completedCount = modules.filter(m => completedModules.includes(m.id)).length
+  // Count against the full 10-module curriculum track — same source as the profile dropdown
+  const completedCount = curriculumTrack.filter(m => completedModules.includes(m.id)).length
+  const totalModules = curriculumTrack.length
   const trackName = TRACK_NAMES[fearType as FearTrack] || 'Your Track'
 
   // Glossary search + filter
@@ -758,10 +1025,10 @@ export default function LearnPage() {
 
             <div className="mb-6">
               <p className="font-sans text-sm text-white/40">
-                <span className="text-white font-medium">{completedCount} of {modules.length}</span> modules completed
+                <span className="text-white font-medium">{completedCount} of {totalModules}</span> modules completed
               </p>
               <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <div className="h-full rounded-full transition-all duration-500" style={{ background: 'var(--accent)', width: `${(completedCount / modules.length) * 100}%` }} />
+                <div className="h-full rounded-full transition-all duration-500" style={{ background: 'var(--accent)', width: `${totalModules > 0 ? (completedCount / totalModules) * 100 : 0}%` }} />
               </div>
             </div>
 
@@ -860,7 +1127,7 @@ export default function LearnPage() {
                         </span>
                       )}
                     </div>
-                    {modules[activeModule].content}
+                    {modules[activeModule].content()}
                     {!completedModules.includes(modules[activeModule].id) ? (
                       <button onClick={() => completeModule(modules[activeModule].id, curriculumTrack[activeModule]?.fearProgressIncrement)}
                         className="mt-8 px-6 py-3 rounded-full font-sans font-bold text-sm text-[#0a1a00] active:scale-[0.97] transition-transform duration-200"
