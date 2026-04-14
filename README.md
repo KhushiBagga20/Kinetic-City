@@ -5,13 +5,13 @@ Kinetic City is an immersive, interactive learning platform designed to make fin
 ## 🚀 Features
 - **Dynamic Learning Paths**: Tailored curriculum tracks (Foundations, Technical Analysis, Wealth Building).
 - **Interactive Dashboards**: Real-time stock data fetching and interactive visualizations.
-- **AI-Powered Mentorship**: Meet "Harvest", your personal AI financial mentor powered by Google Gemini.
+- **AI-Powered Mentorship**: Meet "KINU", your personal AI financial mentor powered by Google Gemini.
 - **Stunning UI/UX**: Fast, responsive, and gorgeous interface built with React, Vite, and modern CSS/animations.
 
 ## 🛠️ Tech Stack
 - **Frontend**: React, Vite, TypeScript, Zustand.
 - **Backend**: Python, FastAPI, Uvicorn.
-- **AI Integration**: Google Generative AI (Gemini 1.5).
+- **AI Integration**: Google Generative AI (Gemini 2.0).
 - **Market Data**: yfinance.
 
 ## 💻 Running Locally
@@ -30,6 +30,7 @@ cp env.example .env
 2. Open the `.env` file and add your Google Gemini API Key:
 ```
 GEMINI_API_KEY=your_actual_api_key_here
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 ### 2. Backend Setup
