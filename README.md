@@ -37,10 +37,10 @@ GEMINI_API_KEY=your_actual_api_key_here
 ```bash
 pip install -r requirements.txt
 ```
-2. Start the FastAPI server (runs on port 8000 by default):
+2. Start the FastAPI server (runs on port 8000):
 ```bash
 cd backend
-uvicorn main:app --reload
+python3 -m uvicorn main:app --port 8000 --reload
 ```
 
 ### 3. Frontend Setup
@@ -52,13 +52,31 @@ cd frontend
 ```bash
 npm install
 ```
-3. Start the Vite development server:
+3. Copy the root `.env` to the frontend folder (required for API access):
+```bash
+cp ../.env .env
+```
+4. Start the Vite development server:
 ```bash
 npm run dev
 ```
 
 ### 4. Access the Application
 Open your browser and navigate to the URL provided by the Vite server (typically `http://localhost:5173`).
+
+### ⚡ Quick Start (All-in-One Scripts)
+If you have your environment set up, you can start both the frontend and backend simultaneously using our helper scripts:
+
+- **Mac / Linux / Windows Git Bash**: 
+  ```bash
+  chmod +x start.sh
+  ./start.sh
+  ```
+- **Windows (CMD / PowerShell)**:
+  Simply double-click the `start.bat` file, or run it from your terminal:
+  ```cmd
+  start.bat
+  ```
 
 ## 📁 Repository Structure
 - `/frontend`: Contains the React UI, components, and state management.

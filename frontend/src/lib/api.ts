@@ -1,7 +1,7 @@
 // ── Kinetic API Client ──────────────────────────────────────────────────────
 // All calls go to the FastAPI backend. Data shapes match the API responses.
 
-const BASE = 'http://localhost:8000'
+const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
