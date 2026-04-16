@@ -14,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import mentor, auth, sandbox, harvest, quotes
 
 # ── Load environment variables ───────────────────────────────────────────────
-load_dotenv()
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(env_path)
 
 # ── Load data ────────────────────────────────────────────────────────────────
 DATA_PATH = Path(__file__).parent / "data" / "portfolio.json"

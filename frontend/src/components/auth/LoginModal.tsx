@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
 import { X, ArrowRight, Loader2 } from 'lucide-react'
 
@@ -9,6 +10,7 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const navigate = useNavigate()
   const setView = useAppStore(s => s.setView)
   const userName = useAppStore(s => s.userName)
   const fearType = useAppStore(s => s.fearType)
@@ -37,7 +39,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       updateStreak()
       setLoading(false)
       onClose()
-      setView('personalized-dashboard')
+      navigate('/dashboard/home')
       return
     }
 
@@ -48,7 +50,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   function goToQuiz() {
     onClose()
-    setView('quiz')
+    navigate('/start')
   }
 
   return (

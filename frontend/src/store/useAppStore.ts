@@ -139,6 +139,8 @@ interface AppState {
   // ── Dashboard Section ─────────────────────────────────────────────────────
   dashboardSection: string
   setDashboardSection: (section: string) => void
+  activeModuleId: string | null
+  setActiveModuleId: (id: string | null) => void
 
   // ── Simulation Result ─────────────────────────────────────────────────────
   simulationResult: SimulationResult | null
@@ -309,6 +311,8 @@ export const useAppStore = create<AppState>()(
       // ── Dashboard Section ───────────────────────────────────────────────────
       dashboardSection: 'home',
       setDashboardSection: (dashboardSection) => set({ dashboardSection }),
+      activeModuleId: null,
+      setActiveModuleId: (activeModuleId) => set({ activeModuleId }),
 
       // ── Simulation Result ───────────────────────────────────────────────────
       simulationResult: null,

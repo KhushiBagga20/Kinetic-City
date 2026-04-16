@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import DashboardHome from './DashboardHome'
@@ -16,6 +17,8 @@ import HarvestRoom from './pages/HarvestRoom'
 import HistoricalSimulators from './pages/HistoricalSimulators'
 import ComparePage from './pages/ComparePage'
 import CalculatorsPage from './pages/CalculatorsPage'
+import ModuleJourney from './pages/ModuleJourney'
+import Roadmap3DPage from './pages/Roadmap3DPage'
 import { setPageTitle } from '../../lib/pageTitles'
 import { getTrackForFear } from '../../lib/curriculumData'
 import {
@@ -55,8 +58,8 @@ function getActiveTab(section: string): string | null {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 export default function PersonalizedDashboard() {
+  const navigate = useNavigate()
   const dashboardSection = useAppStore(s => s.dashboardSection)
-  const setDashboardSection = useAppStore(s => s.setDashboardSection)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const userName = useAppStore(s => s.userName) || ''
   const userEmail = useAppStore(s => s.userEmail) || ''
@@ -116,10 +119,10 @@ export default function PersonalizedDashboard() {
 
   /* ── Navigate helper ──────────────────────────────────────────────── */
   const nav = useCallback((section: string) => {
-    setDashboardSection(section)
+    navigate(`/dashboard/${section}`)
     setOpenDropdown(null)
     setMobileDrawer(false)
-  }, [setDashboardSection])
+  }, [navigate])
 
   /* ── Section renderer ─────────────────────────────────────────────── */
   function renderSection() {
@@ -138,6 +141,8 @@ export default function PersonalizedDashboard() {
       case 'kinu':        return <KinuPage key="kinu" />
       case 'my-card':     return <MyCardPage key="my-card" />
       case 'profile':     return <ProfilePage key="profile" />
+      case 'module-reader': return <ModuleJourney key="module-reader" />
+      case 'roadmap':     return <Roadmap3DPage key="roadmap" />
       default:            return <DashboardHome key="home" />
     }
   }

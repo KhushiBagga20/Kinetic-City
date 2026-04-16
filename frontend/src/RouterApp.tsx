@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Lenis from 'lenis'
 import { useAppStore } from './store/useAppStore'
@@ -14,9 +14,38 @@ function StartRoute() {
   return <AppFlow />
 }
 
-// /dashboard — personalized dashboard, guard if no fearType
+// /dashboard — personalized dashboard, syncs URL param with store and guards if no fearType
 function DashboardRoute() {
+  const { section, moduleId } = useParams()
+  const navigate = useNavigate()
   const fearType = useAppStore(s => s.fearType)
+  const dashboardSection = useAppStore(s => s.dashboardSection)
+  const setDashboardSection = useAppStore(s => s.setDashboardSection)
+  const activeModuleId = useAppStore(s => s.activeModuleId)
+  const setActiveModuleId = useAppStore(s => s.setActiveModuleId)
+
+  useEffect(() => {
+    // If we're on a module route
+    if (moduleId) {
+      if (dashboardSection !== 'module-reader') {
+        setDashboardSection('module-reader')
+      }
+      if (activeModuleId !== moduleId) {
+        setActiveModuleId(moduleId)
+      }
+    } else if (section) {
+      if (section !== dashboardSection) {
+        setDashboardSection(section)
+      }
+      if (activeModuleId !== null) {
+        setActiveModuleId(null)
+      }
+    } else {
+      // Default to home if no section provided
+      navigate('/dashboard/home', { replace: true })
+    }
+  }, [section, moduleId, dashboardSection, activeModuleId, setDashboardSection, setActiveModuleId, navigate])
+
   if (!fearType) return <Navigate to="/start" replace />
   return <PersonalizedDashboard />
 }
@@ -24,10 +53,8 @@ function DashboardRoute() {
 // /sandbox — jump to dashboard with sandbox section
 function SandboxRoute() {
   const fearType = useAppStore(s => s.fearType)
-  const setDashboardSection = useAppStore(s => s.setDashboardSection)
-  useEffect(() => { setDashboardSection('sandbox') }, [setDashboardSection])
   if (!fearType) return <Navigate to="/start" replace />
-  return <PersonalizedDashboard />
+  return <Navigate to="/dashboard/sandbox" replace />
 }
 
 export default function RouterApp() {
@@ -53,6 +80,8 @@ export default function RouterApp() {
         <Route path="/" element={<MarketingLanding />} />
         <Route path="/start" element={<StartRoute />} />
         <Route path="/dashboard" element={<DashboardRoute />} />
+        <Route path="/dashboard/:section" element={<DashboardRoute />} />
+        <Route path="/dashboard/module/:moduleId" element={<DashboardRoute />} />
         <Route path="/sandbox" element={<SandboxRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
