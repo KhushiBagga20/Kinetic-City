@@ -1,58 +1,7 @@
 import { motion } from 'framer-motion'
 import { useAppStore } from '../../store/useAppStore'
 
-/* ── Module names for next-module display ────────────────────────────────── */
-
-const MODULE_NAMES: Record<string, string[]> = {
-  loss: [
-    'Why your brain hates losing money',
-    'The recovery truth',
-    'Your first ₹100 SIP',
-    'What is a Nifty 50 Index Fund?',
-    'The 70-year proof',
-    'How KINETIC\'s simulators work',
-    'SIP vs Lumpsum vs FD — the comparison',
-    'Reading the Monte Carlo fan chart',
-    'The ₹500 Time Machine',
-    'Set up your first goal',
-  ],
-  jargon: [
-    'The Jargon Graveyard',
-    'NAV — the only number that matters',
-    'SIP — automatic investing explained',
-    'Expense ratio — the silent fee',
-    'CAGR vs absolute returns',
-    'How KINETIC\'s simulators work',
-    'SIP vs Lumpsum vs FD — the comparison',
-    'Reading the Monte Carlo fan chart',
-    'Build your first SIP calculation',
-    'Set up your first goal',
-  ],
-  scam: [
-    'How SEBI protects your money',
-    'Red flags in fake schemes',
-    'Why index funds can\'t scam you',
-    'The AMFI verification method',
-    'Reading a mutual fund factsheet',
-    'How KINETIC\'s simulators work',
-    'SIP vs Lumpsum vs FD — the comparison',
-    'Reading the Monte Carlo fan chart',
-    'Verify a real fund',
-    'Set up your first goal',
-  ],
-  trust: [
-    'Why banks want your money in FDs',
-    'The math of index funds vs FDs',
-    'Compound interest — your edge',
-    'Direct plans vs regular plans',
-    'The 0.1% expense ratio advantage',
-    'How KINETIC\'s simulators work',
-    'SIP vs Lumpsum vs FD — the comparison',
-    'Reading the Monte Carlo fan chart',
-    'The fee X-ray',
-    'Set up your first goal',
-  ],
-}
+import { getTrackForFear } from '../../lib/curriculumData'
 
 /* ── Next step logic ─────────────────────────────────────────────────────── */
 
@@ -65,10 +14,9 @@ interface NextStep {
 }
 
 function getNextModuleName(fearType: string, completedModules: string[]): string {
-  const names = MODULE_NAMES[fearType] || MODULE_NAMES.loss
-  const trackModules = completedModules.filter(m => m.startsWith(fearType))
-  const nextIndex = trackModules.length
-  return names[nextIndex] || names[0]
+  const track = getTrackForFear(fearType)
+  const nextModule = track.find(m => !completedModules.includes(m.id))
+  return nextModule ? nextModule.title : track[track.length - 1].title
 }
 
 function getNextStep(state: {

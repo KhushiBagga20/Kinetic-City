@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useAppStore } from '../../../store/useAppStore'
+import { useNavigate } from 'react-router-dom'
 import { FlaskConical, Sprout, ArrowRight } from 'lucide-react'
 
 const SANDBOX_YEARS = [
@@ -15,7 +15,7 @@ const HARVEST_ERAS = [
 ]
 
 export default function HistoricalSimulators() {
-  const setDashboardSection = useAppStore(s => s.setDashboardSection)
+  const navigate = useNavigate()
 
   return (
     <motion.div
@@ -68,7 +68,7 @@ export default function HistoricalSimulators() {
             {SANDBOX_YEARS.map(y => (
               <button
                 key={y.fy}
-                onClick={() => setDashboardSection('sandbox')}
+                onClick={() => navigate('/dashboard/sandbox')}
                 className="px-3 py-1.5 rounded-full font-sans text-xs border transition-[background-color,border-color] duration-200 hover:border-white/15"
                 style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)', color: 'rgba(255,255,255,0.5)' }}
               >
@@ -79,7 +79,7 @@ export default function HistoricalSimulators() {
 
           <div className="mt-auto">
             <button
-              onClick={() => setDashboardSection('sandbox')}
+              onClick={() => navigate('/dashboard/sandbox')}
               className="w-full py-3.5 rounded-full font-sans font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-transform duration-200"
               style={{ background: '#EF9F27', color: '#1a1000' }}
             >
@@ -113,7 +113,7 @@ export default function HistoricalSimulators() {
             {HARVEST_ERAS.map(e => (
               <button
                 key={e.year}
-                onClick={() => setDashboardSection('harvest')}
+                onClick={() => navigate('/dashboard/harvest')}
                 className="px-3 py-1.5 rounded-full font-sans text-xs border transition-[background-color,border-color] duration-200 hover:border-white/15"
                 style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)', color: 'rgba(255,255,255,0.5)' }}
               >
@@ -124,7 +124,7 @@ export default function HistoricalSimulators() {
 
           <div className="mt-auto">
             <button
-              onClick={() => setDashboardSection('harvest')}
+              onClick={() => navigate('/dashboard/harvest')}
               className="w-full py-3.5 rounded-full font-sans font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-transform duration-200"
               style={{ background: '#1D9E75', color: '#001a10' }}
             >

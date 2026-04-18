@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
-import { postSandboxDebrief, postSandboxAdvice } from '../../../lib/api'
+import { generateSandboxDebrief, generateSandboxAdvice, generateHistoricalNews } from '../../../lib/simulateAI'
 import {
   getAllFYKeys, getFYLabel, getFYHumanLabel, getFYMonthYear, getFYEvent,
   simulateFY, type FYAssetReturns,
@@ -90,6 +90,7 @@ function SandboxInner() {
   const [activeCrashInfo, setActiveCrashInfo] = useState<{ crash: CrashEvent; monthsIn: number } | null>(null)
   const [breakthroughTriggered, setBreakthroughTriggered] = useState(false)
   const [wasBelowBudget, setWasBelowBudget] = useState(false)
+  const [aiNewsLoading, setAiNewsLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debrief state
@@ -258,6 +259,29 @@ function SandboxInner() {
     setIsPlaying(true)
   }
 
+  // ── AI News Generation for Crash Decision ────────────────────────────
+  useEffect(() => {
+    if (phase === 'crash-decision' && flashEvent && flashEvent.severity === 'danger') {
+      const generateNews = async () => {
+        setAiNewsLoading(true);
+        try {
+          const dateStr = getFYMonthYear(selectedFY, currentMonth);
+          const news = await generateHistoricalNews({
+            date: dateStr,
+            eventName: flashEvent.headline,
+            severity: flashEvent.severity
+          });
+          setFlashEvent(prev => prev ? { ...prev, headline: news.headline, description: news.snippet } : null);
+        } catch (e) {
+          console.error("Failed to generate AI news", e);
+        } finally {
+          setAiNewsLoading(false);
+        }
+      };
+      generateNews();
+    }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Debrief ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'debrief') return
@@ -270,7 +294,7 @@ function SandboxInner() {
 
       const finalVals = pulledOut && pullOutValues ? pullOutValues : simData.finalValues
 
-      postSandboxDebrief({
+      generateSandboxDebrief({
         year: selectedFY,
         allocation: alloc,
         final_values: finalVals,
@@ -287,7 +311,7 @@ function SandboxInner() {
       setDebriefStep(2)
       setDebriefAdviceLoading(true)
 
-      postSandboxAdvice({
+      generateSandboxAdvice({
         year: selectedFY,
         user_allocation: alloc,
         optimal_allocation: optimal ? { nifty: optimal.nifty, midcap: optimal.midcap, smallcap: optimal.smallcap, debt: optimal.debt } : alloc,
@@ -728,12 +752,26 @@ function SandboxInner() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
               {/* LEFT: What just happened */}
-              <div className="rounded-3xl p-6 border-2" style={{ background: 'var(--surface)', borderColor: 'var(--danger)' }}>
-                <p className="font-sans text-[10px] text-white/25 uppercase tracking-wider mb-4">What just happened</p>
-                <h2 className="font-display font-bold text-xl text-white mb-3">{flashEvent.headline}</h2>
-                <p className="font-sans text-sm text-white/50 leading-relaxed">
-                  {crashRecovery?.explanation || flashEvent.description}
+              <div className="rounded-3xl p-6 border-2 relative overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--danger)' }}>
+                <p className="font-sans text-[10px] text-white/25 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  What just happened
+                  {aiNewsLoading && (
+                    <span className="flex gap-1 items-center bg-white/5 px-2 py-0.5 rounded-full">
+                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-1 h-1 rounded-full bg-[var(--accent)]" />
+                      <span className="text-[8px] text-[var(--accent)] font-medium tracking-widest">AI GENERATING NEWS</span>
+                    </span>
+                  )}
                 </p>
+                <motion.div
+                  initial={false}
+                  animate={{ opacity: aiNewsLoading ? 0.5 : 1, filter: aiNewsLoading ? 'blur(2px)' : 'blur(0px)' }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h2 className="font-display font-bold text-xl text-white mb-3 leading-tight">{flashEvent.headline}</h2>
+                  <p className="font-sans text-sm text-white/50 leading-relaxed">
+                    {aiNewsLoading ? "Synthesizing period-accurate market context..." : (crashRecovery?.explanation || flashEvent.description)}
+                  </p>
+                </motion.div>
               </div>
 
               {/* CENTER: Your portfolio right now */}

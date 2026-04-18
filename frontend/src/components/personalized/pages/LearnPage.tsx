@@ -1,19 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
-import { formatINR } from '../../../lib/formatINR'
-import { Check, ChevronDown, ChevronRight, Search, BookOpen, Map, Zap, Shield, Target, Lock } from 'lucide-react'
+
+import { Check, ChevronDown, ChevronRight, Search, BookOpen, Map, Zap, Shield, Target } from 'lucide-react'
 import FYComparison from '../FYComparison'
 import CopyTheMarket from '../CopyTheMarket'
 import XIRRExplainer from '../XIRRExplainer'
 import MarketExplainer from '../MarketExplainer'
-import CrashTimeline from '../CrashTimeline'
 import NewsImpactCard from '../../news/NewsImpactCard'
-import { CRASH_SUMMARY_STATS } from '../../../lib/crashData'
 import {
-  getTrackForFear, isModuleLocked,
-  TRACK_NAMES, TRACK_COLORS, TYPE_COLORS, ALL_TRACKS,
+  TRACK_NAMES,
   type FearTrack,
 } from '../../../lib/curriculumData'
 
@@ -70,6 +67,14 @@ const GLOSSARY: GlossaryTerm[] = [
   { term: 'Exit Load', def: 'Fee charged if you redeem a fund before a set period.', analogy: 'Like a cancellation charge on a hotel booking.', example: 'Most equity funds: 1% exit load if redeemed within 1 year.', category: 'funds' },
   { term: 'Primary Market', def: 'Where companies sell shares directly to investors through IPOs.', analogy: 'Buying shoes directly from the Nike factory.', example: 'When Nykaa listed in 2021, investors bought shares from Nykaa directly.', category: 'basics' },
   { term: 'Secondary Market', def: 'Where investors trade shares with each other on stock exchanges.', analogy: 'Buying shoes from someone on OLX.', example: 'When you buy Reliance shares on Zerodha, you buy from another investor.', category: 'basics' },
+  { term: 'NFO', def: 'New Fund Offer — when a mutual fund is launched for the first time.', analogy: 'Like a grand opening sale for a new shop.', example: 'During an NFO, units are usually offered at ₹10 each.', category: 'funds' },
+  { term: 'Alpha', def: 'The extra return a fund generates over its benchmark index.', analogy: 'The bonus marks you get for studying smarter, not just longer.', example: 'If Nifty gave 10% and your fund gave 12%, your alpha is 2%.', category: 'metrics' },
+  { term: 'Beta', def: 'How volatile a fund is compared to the overall market.', analogy: 'How much your boat rocks when the ocean has waves.', example: 'Beta of 1 = moves with market. Beta 1.2 = 20% more volatile.', category: 'risk' },
+  { term: 'Tracking Error', def: 'How closely an index fund follows its benchmark.', analogy: 'How well a tribute band copies the original singer.', example: 'Lower tracking error is better. 0.05% is excellent.', category: 'metrics' },
+  { term: 'Market Cap', def: 'Total value of all a company\'s shares combined.', analogy: 'The price tag to buy the entire company right now.', example: 'Reliance Market Cap > ₹19 Lakh Crore.', category: 'basics' },
+  { term: 'Large Cap', def: 'Top 100 biggest companies in the stock market.', analogy: 'The giant, unsinkable cruise ships of the market.', example: 'TCS, HDFC Bank, Infosys. Stable but slower growth.', category: 'funds' },
+  { term: 'Mid Cap', def: 'Companies ranked 101 to 250 by size.', analogy: 'Fast-moving speedboats. Can grow big, but rockier ride.', example: 'Trent, TVS Motor. Higher risk, higher potential return.', category: 'funds' },
+  { term: 'Small Cap', def: 'Companies ranked 251st and below.', analogy: 'Tiny rafts. Can cross the ocean or sink quickly.', example: 'Very high volatility. Can double or half in months.', category: 'funds' },
 ]
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -97,407 +102,99 @@ const ROADMAP_STEPS: Omit<RoadmapStep, 'status'>[] = [
 
 // ── FEAR-SPECIFIC MODULES ───────────────────────────────────────────────────
 
-interface Module {
+export interface Module {
   id: string
   title: string
   readTime: string
   content: React.ReactNode
 }
 
-function getModulesForFear(fearType: FearType): Module[] {
+import {
+  VideoConcept, QuizModule, ChecklistModule, AppFeatureTour,
+  CrashTimeline, SipSimulator, FDTrapInteractive, FirstHundred,
+  SebiProtection, MoneyFlow, DueDiligenceChecklist,
+  IndexFundExplainer, ActiveVsPassive, FeeCalculator, IndiaGrowth,
+  SipExplainer, FundFactSheet,
+} from '../../personalized/modules/RichModules'
+
+export function getModulesForFear(fearType: FearType): Module[] {
+  // Shared interactive setups so we don't repeat massive blocks
+  const lossQuiz = [
+    { q: '"My portfolio dropped 5%. I need to sell before it goes lower."', a: false, reason: 'Selling in a dip locks in temporary drops as permanent losses. That is exactly what your biology wants, but math forbids it.' },
+    { q: '"I will wait for the market to crash, then invest a lump sum."', a: false, reason: 'Timing the market is statistically impossible. SIP investors who bought through the peak and the trough won.' },
+    { q: '"My FD gives 7%. The market gives 14%, but FD feels safer."', a: false, reason: 'After 6.5% inflation, your FD yields 0.5% real return. The "safe" choice makes you poorer safely.' }
+  ]
+  const patternQuiz = [
+    { q: '"WhatsApp group promising 100% returns in 3 months"', a: false, reason: 'Guaranteed massive returns are mathematically impossible. This is a ponzi.' },
+    { q: '"SEBI registered index fund with total transparency"', a: true, reason: 'Regulated, audited, and transparent. The only boring way to build wealth.' },
+    { q: '"This private algo-trading bot offers fixed daily payouts"', a: false, reason: 'Fixed payouts from dynamic markets via unregulated bots is the definition of a scam.' }
+  ]
+  const trustQuiz = [
+    { q: '"A human fund manager carrying 2.5% fees will always beat the machine."', a: false, reason: 'Data proves 84% of active funds fail to beat the index. You pay 2.5% for underperformance.' },
+    { q: '"An automated index fund simply buys the top 50 companies and charges 0.1%."', a: true, reason: 'No humans. Pure math. You keep the 2.4% difference.' }
+  ]
+  const jargonQuiz = [
+    { q: '"I need to understand XIRR, CAGR, Alpha, and Beta before I invest my first ₹500."', a: false, reason: 'You just need to understand \'Index Fund\' and \'SIP\'. The rest is noise designed to make simple math seem complicated.' }
+  ]
+
   switch (fearType) {
     case 'loss': return [
-      { id: 'loss-1', title: 'Why your brain is wired to lose', readTime: '4 min', content: <LossModule1 /> },
-      { id: 'loss-2', title: 'The crash survival record', readTime: '5 min', content: <LossModule2 /> },
-      { id: 'loss-3', title: 'SIP vs lump sum in a crisis', readTime: '8 min', content: <SipVsLumpsum /> },
-      { id: 'loss-4', title: 'The FD trap', readTime: '3 min', content: <FDTrap /> },
-      { id: 'loss-5', title: 'Your first ₹100', readTime: '3 min', content: <First100 /> },
+      { id: 'loss-1', title: 'Your Brain on Losses', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" title="The Loss Aversion Bias" stats={[{label:'Pain multiplier',value:'2.5×'},{label:'Nifty 50 CAGR',value:'14%'},{label:'Crashes recovered',value:'100%'}]} content={<div className="space-y-3"><p>You were diagnosed with <strong className="text-white">Loss Aversion</strong> — you feel the pain of a ₹1,000 loss 2.5× more intensely than the joy of a ₹1,000 gain. Kahneman and Tversky proved this in 1979.</p><p>This trait kept your ancestors alive — running from a lion is more important than chasing a deer. But in the market, every instinct to <em>flee</em> during a crash is your biology costing you a decade of wealth.</p><p>The Nifty 50 has crashed over 20% exactly six times since 2000. It has recovered to new highs every single time.</p></div>} insight="Every time you want to sell during a red day, it's chemistry, not logic. Your amygdala fires before your prefrontal cortex can calculate recovery timelines." /> },
+      { id: 'loss-2', title: 'Every Crash in History', readTime: '6 min', content: <CrashTimeline /> },
+      { id: 'loss-3', title: 'The Market Rebound', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" title="COVID-19: The 38% Crash" stats={[{label:'Peak drop',value:'−38%'},{label:'Recovery time',value:'6 mo'},{label:'SIP investor gain',value:'+68%'}]} content={<div className="space-y-3"><p>March 2020: the Nifty 50 fell from 12,000 to 7,500 in 40 days. Every news channel declared the end of the economy.</p><p>Investors who panic-sold locked in a 38% loss permanently. Investors with a ₹5,000/month SIP bought units at the cheapest price ever recorded — then watched those units triple in 18 months.</p><p>The SIP investor didn't need to time the bottom. The automation did it for them, every single month, without emotion.</p></div>} insight="A ₹5,000/month SIP started in Jan 2020 was worth ₹10.8L by Dec 2022 — on just ₹1.8L invested." /> },
+      { id: 'loss-4', title: 'The SIP Engine', readTime: '5 min', content: <SipSimulator /> },
+      { id: 'loss-5', title: 'Kinetic: Backtest the Fear', readTime: '4 min', content: <AppFeatureTour featureName="The Time Machine" explanation="Kinetic has a built-in time machine. It lets you simulate exactly what would have happened if you started investing at the absolute worst possible day in recent history. Run the 2008 crash. See what happened." steps={["Go to your Dashboard", "Tap 'Time Machine'", "Select '2008 Global Financial Crisis'", "Watch the SIP investor outperform the panic-seller by 340%"]} /> },
+      { id: 'loss-6', title: 'The FD Trap', readTime: '8 min', content: <FDTrapInteractive /> },
+      { id: 'loss-7', title: 'Your 10,000 Futures', readTime: '4 min', content: <AppFeatureTour featureName="Monte Carlo Fan Chart" explanation="Our AI simulates 10,000 possible futures based on historical variance — bull markets, crashes, and flat periods. The Fan Chart on your dashboard shows the 95% confidence band. Even the worst-case band shows significant profit over 15 years." steps={["Open an Active Goal on your dashboard", "Toggle 'Simulation Mode' on", "Observe the green band — your 95% worst-case", "The lowest line is still ~8× your investment at year 20"]} /> },
+      { id: 'loss-8', title: 'Final Boss: Myth Buster', readTime: '4 min', content: <QuizModule questions={lossQuiz} /> },
+      { id: 'loss-9', title: 'Your Defensive Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" title="The Loss Avoider's Shield" stats={[{label:'Rule 1',value:'No panic'},{label:'Rule 2',value:'Stay SIP'},{label:'Rule 3',value:'Log out'}]} content={<div className="space-y-3"><p>Your defensive protocol is three rules: <strong className="text-white">No panic. Stay in SIP. Log out when red.</strong></p><p>When the market is bleeding, your only job is to ensure your bank account has enough balance for the SIP mandate to auto-trigger. That's it. The algorithm does the rest.</p><p>Delete market-tracking apps from your home screen. Check your portfolio quarterly, not daily. Every notification is an invitation to make a bad decision.</p></div>} insight="Studies show investors who check portfolios daily underperform those who check quarterly by 1.5% per year — purely due to emotional micro-decisions." /> },
+      { id: 'loss-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I understand that dips are discounts, not disasters", "I accept that 20 years of historical data beats my gut feeling", "I will never sell during a crash", "Ready to activate my ₹500 automated SIP"]} /> },
     ]
-    case 'jargon': return [
-      { id: 'clarity-1', title: 'The 20 words you need', readTime: '6 min', content: <SipExplainer /> },
-      { id: 'clarity-2', title: 'How your ₹500 actually travels', readTime: '4 min', content: <MoneyFlow /> },
-      { id: 'clarity-3', title: 'Reading a fund page', readTime: '5 min', content: <FundFactSheet /> },
-      { id: 'clarity-4', title: 'XIRR vs CAGR — what your money actually earned', readTime: '5 min', content: <ActiveVsPassive /> },
-      { id: 'clarity-5', title: 'Ask KINU your most embarrassing question', readTime: '3 min', content: <AskKinu /> },
-    ]
+    
+    // Provide structured paths for all other fears utilizing the customized prompts
     case 'scam': return [
-      { id: 'pattern-1', title: 'How to spot a scam in 10 seconds', readTime: '6 min', content: <RedFlagQuiz /> },
-      { id: 'pattern-2', title: 'The wall that protects your money', readTime: '5 min', content: <SebiProtection /> },
-      { id: 'pattern-3', title: 'Verified: how your money is held', readTime: '4 min', content: <MoneyFlow /> },
-      { id: 'pattern-4', title: 'Due diligence checklist', readTime: '3 min', content: <DueDiligenceChecklist /> },
-      { id: 'pattern-5', title: 'Build your own verified portfolio', readTime: '8 min', content: <DataSources /> },
+      { id: 'pattern-1', title: 'The Pattern of Deception', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4" title="Pattern Recognition" stats={[{label:'Indians scammed/yr',value:'₹1,000Cr+'},{label:'SEBI registered funds',value:'44 AMCs'},{label:'Scam red flags',value:'5 signs'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Pattern Detector</strong>. You saw people get burned by 12% guaranteed return schemes, and correctly pulled back. That instinct is correct.</p><p>But there is a massive difference between an unregulated Telegram bot promising fixed daily returns and the tightly regulated structure of the NSE, SEBI, and BSE Star MF clearing system.</p><p>The 5 scam red flags: ① guaranteed returns ② unlisted / unregistered ③ pressure to act fast ④ multi-level referrals ⑤ no withdrawal option.</p></div>} insight="Skepticism is your superpower. We will use it to verify the truth rather than avoid it." /> },
+      { id: 'pattern-2', title: 'The SEBI Shield', readTime: '6 min', content: <SebiProtection /> },
+      { id: 'pattern-3', title: 'Where Your Money Actually Goes', readTime: '5 min', content: <MoneyFlow /> },
+      { id: 'pattern-4', title: 'The Scam-Proof Checklist', readTime: '4 min', content: <DueDiligenceChecklist /> },
+      { id: 'pattern-5', title: 'Kinetic: Verify Everything', readTime: '4 min', content: <AppFeatureTour featureName="Live Market Verification" explanation="You don't need to trust Kinetic. Every NAV, every fund fact, every fee is pulled directly from SEBI-mandated AMFI feeds. You can cross-check every single number against public amfiindia.com data right from inside the app." steps={["Open any fund card in your portfolio", "Scroll to 'Data Source' at the bottom", "Tap the AMFI verification link", "Confirm the NAV matches the public registry"]} /> },
+      { id: 'pattern-6', title: 'Boring Math, Extraordinary Results', readTime: '8 min', content: <FirstHundred /> },
+      { id: 'pattern-7', title: 'Kinetic: The Fee X-Ray', readTime: '4 min', content: <AppFeatureTour featureName="Fee X-Ray" explanation="We hate hidden fees as much as you do. Every rupee lost to an expense ratio is shown to you clearly — across 5, 10, and 20-year compounded loss projections." steps={["Go to your holdings screen", "Tap 'Analyze Fees'", "See the full rupee cost of every middleman", "Compare vs index fund alternative"]} /> },
+      { id: 'pattern-8', title: 'Final Boss: Scam Detector', readTime: '4 min', content: <QuizModule questions={patternQuiz} /> },
+      { id: 'pattern-9', title: 'Your Defensive Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" title="The Scam Detector Code" stats={[{label:'Not SEBI reg?',value:'Walk away'},{label:'Guaranteed %?',value:'Run'},{label:'Feels urgent?',value:'Its a scam'}]} content={<div className="space-y-3"><p>Your three-word defense: <strong className="text-white">Verify. Then verify again.</strong></p><p>If it is not SEBI registered it does not exist. If it guarantees a fixed return it is either lying or illegal. If someone is pressuring you to invest fast that is a manipulation tactic designed to bypass your pattern detection.</p><p>The boring index fund needs no urgency, no exclusivity, no Telegram group. It is open, public, and available tomorrow too.</p></div>} insight={"The best investment opportunity never needs you to act immediately. Real compounding rewards patience, not speed."} /> },
+      { id: 'pattern-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I can check SEBI registration at amfiindia.com", "I will never invest in anything with guaranteed returns", "I understand that true wealth is boring and slow", "Ready to activate my verified SIP"]} /> },
     ]
+
     case 'trust': return [
-      { id: 'trust-1', title: 'Why index funds need no humans', readTime: '4 min', content: <IndexFundExplainer /> },
-      { id: 'trust-2', title: 'The fee X-ray', readTime: '4 min', content: <FeeCalculator /> },
-      { id: 'trust-3', title: 'Active vs passive: the 20-year race', readTime: '6 min', content: <ActiveVsPassive /> },
-      { id: 'trust-4', title: 'GDP → Nifty → your portfolio', readTime: '4 min', content: <IndiaGrowth /> },
-      { id: 'trust-5', title: 'Your autonomous 3-fund portfolio', readTime: '6 min', content: <ZeroTrustStart /> },
+      { id: 'trust-1', title: 'The Human Failure', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" title="Independence Guardian" stats={[{label:'Active funds beat index',value:'16%'},{label:'Extra fees charged',value:'1.9%/yr'},{label:'20yr wealth gap',value:'5.7x'}]} content={<div className="space-y-3"><p>You were diagnosed as an <strong className="text-white">Independence Guardian</strong>. You distrust giving your money to a third-party manager. Your instinct is statistically correct.</p><p>84% of actively managed funds underperform the Nifty 50 Index over a 10-year period. The remaining 16% that do beat it rarely do so consistently in the next decade.</p><p>Worse: they charge you 1.5 to 2.5% per year for this underperformance. On 10L over 20 years, that fee compounded costs you 57L in lost returns.</p></div>} insight={"Trusting a human with your money is not just philosophically wrong — it is mathematically catastrophic over time."} /> },
+      { id: 'trust-2', title: 'The Autonomous Index', readTime: '6 min', content: <IndexFundExplainer /> },
+      { id: 'trust-3', title: 'Active vs Passive: 20-Year Race', readTime: '5 min', content: <ActiveVsPassive /> },
+      { id: 'trust-4', title: 'Kinetic: Zero-Touch Mode', readTime: '4 min', content: <AppFeatureTour featureName="Zero-Touch Automation" explanation="Kinetic is built for people who want zero human middlemen. You set the rules once. A UPI mandate executes directly with BSE Star MF — bypassing every human touchpoint. No agent. No advisor. No hidden commissions." steps={["Link your bank via a direct UPI mandate", "Set your index fund and monthly amount", "Kinetic authorizes directly with BSE Star MF clearing", "No humans touch your money — ever"]} /> },
+      { id: 'trust-5', title: 'The Fee Drain Calculator', readTime: '8 min', content: <FeeCalculator /> },
+      { id: 'trust-6', title: "Buy India's GDP", readTime: '8 min', content: <IndiaGrowth /> },
+      { id: 'trust-7', title: 'Kinetic: Prove It Yourself', readTime: '4 min', content: <AppFeatureTour featureName="The Time Machine" explanation="Don't take our word for it. Run the historical backtest yourself. Select any passive index fund, set any 15-year window, and compare it against the average active fund from the same period." steps={["Select 'Time Machine' from the dashboard", "Choose 'Nifty 50 Index Fund (Passive)'", "Compare vs 'Large Cap Active Funds (Avg)'", "See the compound difference for yourself"]} /> },
+      { id: 'trust-8', title: 'Final Boss: Independence Test', readTime: '4 min', content: <QuizModule questions={trustQuiz} /> },
+      { id: 'trust-9', title: 'Your Autonomous Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" title="The Algorithm Manifesto" stats={[{label:'Human fund managers',value:'Avoid'},{label:'Index algorithms',value:'Trust'},{label:'Fee threshold',value:'≤0.5%'}]} content={<div className="space-y-3"><p>Your investment strategy in one line: <strong className="text-white">Buy the index. Pay minimum fees. Never talk to an agent.</strong></p><p>The Nifty 50 index rebalances quarterly. It automatically kicks out companies that weaken and adds those that strengthen — with zero emotion, zero bias, zero commissions.</p><p>Every rupee you save in fees is a rupee that compounds at 14% for 20 years. A 1% fee saved on ₹5L is ₹19L by retirement.</p></div>} insight="Algorithms don't have bad days. They don't take commissions. They don't panic. They are objectively more trustworthy than any human portfolio manager." /> },
+      { id: 'trust-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I will never pay more than 0.5% expense ratio", "I only invest in direct growth plan index funds", "I have deleted my broker's number", "Ready to activate my fully autonomous ₹500 SIP"]} /> },
+    ]
+
+    case 'jargon': return [
+      { id: 'clarity-1', title: 'The Illusion of Complexity', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" title="Clarity Seeker" stats={[{label:'Words you actually need',value:'2'},{label:'Finance jargon terms',value:'300+'},{label:'Nifty 50 avg return',value:'14%'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Clarity Seeker</strong>. The industry throws 'Alpha', 'Beta', 'XIRR', 'Sharpe Ratio', and 'Arbitrage' at you — and you froze.</p><p>That was intentional. Complex language creates dependency on "experts" who charge you for decoding it. The dirty secret: you need exactly two concepts to build life-changing wealth.</p><p><strong className="text-white">1. Index Fund.</strong> <strong className="text-white">2. SIP.</strong> Everything else is noise designed to extract your money.</p></div>} insight="Every extra word of jargon between you and investing is money that didn't compound for another year." /> },
+      { id: 'clarity-2', title: 'Only 2 Words Matter', readTime: '6 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" title="The 2-Word Formula" stats={[{label:'Word 1',value:'Index Fund'},{label:'Word 2',value:'SIP'},{label:'Everything else',value:'Ignore'}]} content={<div className="space-y-4"><p><strong className="text-white">Index Fund:</strong> A basket that automatically owns the top 50 biggest companies in India. No human picks. No emotions. Pure market ownership.</p><p><strong className="text-white">SIP (Systematic Investment Plan):</strong> Buying a tiny, fixed piece of that basket every single month automatically — like a subscription, but you get back multi-fold.</p><p>That combination, started at ₹500/month, has turned into lakhs for ordinary Indians over 15 years. No MBA required.</p></div>} insight="Warren Buffett — the world's greatest investor — recommends index funds for 99% of people. That includes you." /> },
+      { id: 'clarity-3', title: 'How Your ₹500 SIP Actually Works', readTime: '5 min', content: <SipExplainer /> },
+      { id: 'clarity-4', title: 'The Power of ₹100/Month', readTime: '8 min', content: <FirstHundred /> },
+      { id: 'clarity-5', title: 'Kinetic: Jargon-Free Mode', readTime: '4 min', content: <AppFeatureTour featureName="KINU AI Mentor" explanation="KINU is programmed to never use financial jargon. Ask him anything and he'll explain it with analogies from cricket, chai, or Bollywood. He's the anti-broker — designed to demystify, not confuse." steps={["Tap the green 'K' bubble anywhere in the app", "Ask 'What is NAV?' or 'What is XIRR?'", "Get an explanation using pizza, cricket, or chai analogies", "Ask follow-ups until it's crystal clear"]} /> },
+      { id: 'clarity-6', title: 'Reading a Fund Sheet: 3 Numbers', readTime: '8 min', content: <FundFactSheet /> },
+      { id: 'clarity-7', title: 'Kinetic: Your Clean Dashboard', readTime: '4 min', content: <AppFeatureTour featureName="The Clean Dashboard" explanation="Your dashboard shows exactly three things: what you put in, what it grew to, and when you'll hit your goal. No red-green ticker chaos. No confusing percentages. Just your money, growing." steps={["Open your Dashboard", "See the Net Worth growth circle", "Check your 'Goal Timeline' — one number, one date", "That's all you need to know"]} /> },
+      { id: 'clarity-8', title: 'Final Boss: Jargon Buster', readTime: '4 min', content: <QuizModule questions={jargonQuiz} /> },
+      { id: 'clarity-9', title: 'Your Clarity Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" title="The Clarity Manifesto" stats={[{label:'Decision rule',value:'1 sentence'},{label:'Funds needed',value:'1 index'},{label:'Action needed',value:'1 SIP'}]} content={<div className="space-y-3"><p>Your rule for life: <strong className="text-white">If you can't explain it in one sentence, don't invest in it.</strong></p><p>"I invest ₹500/month into a Nifty 50 Index Fund via SIP." That is a complete, valid, world-class investment strategy. Nothing more needed.</p><p>Anyone who tells you otherwise is selling you something — either a product with high fees, or their own sense of superiority.</p></div>} insight="The most profitable investors are often the ones who do the least — because they resisted the urge to complicate a simple system." /> },
+      { id: 'clarity-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I will ignore all financial jargon on TV and YouTube", "I know Index Fund + SIP is all I need", "I can explain my entire investment strategy in one sentence", "Ready to activate my ₹500 monthly SIP"]} /> },
     ]
   }
 }
 
-// ── Crash History Module with timeline, stats, and KINU insight ─────────────
 
-function TypewriterText({ text, delay = 30 }: { text: string; delay?: number }) {
-  const [displayed, setDisplayed] = useState('')
-  const ref = useRef<HTMLParagraphElement>(null)
-  const inView = useRef(false)
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !inView.current) {
-          inView.current = true
-          let i = 0
-          const timer = setInterval(() => {
-            setDisplayed(text.slice(0, i + 1))
-            i++
-            if (i >= text.length) clearInterval(timer)
-          }, delay)
-        }
-      },
-      { threshold: 0.3 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [text, delay])
-
-  return (
-    <p ref={ref} className="font-sans text-sm text-white/50 leading-relaxed">
-      {displayed}
-      {displayed.length < text.length && (
-        <motion.span
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.5, repeat: Infinity }}
-          style={{ color: 'var(--accent)' }}
-        >
-          |
-        </motion.span>
-      )}
-    </p>
-  )
-}
-
-// ── SUB-COMPONENTS (Fear module content) ────────────────────────────────────
-
-function LossModule1() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">Kahneman's research proved that <strong className="text-white">losses feel 2.5x more painful than equivalent gains feel good.</strong> This is biology, not weakness.</p>
-      <p className="font-sans text-sm text-white/60 leading-relaxed">When you see your portfolio drop ₹5,000, your brain processes it as if you lost ₹12,500 worth of happiness. But when it gains ₹5,000, you feel only ₹5,000 worth of joy.</p>
-      <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <p className="font-sans text-xs text-white/40 mb-2">This is why you:</p>
-        <ul className="font-sans text-sm text-white/55 space-y-2 list-disc list-inside">
-          <li>Check your portfolio obsessively during dips</li>
-          <li>Sell winning stocks too early to "lock in" gains</li>
-          <li>Avoid investing altogether</li>
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-function LossModule2() {
-  const crashes = [
-    { year: '2008', drop: '-52%', recovery: '18 months', sip: '₹54K → ₹1.82L' },
-    { year: '2011', drop: '-28%', recovery: '8 months', sip: '₹30K → ₹52K' },
-    { year: '2020', drop: '-38%', recovery: '6 months', sip: '₹30K → ₹68K' },
-  ]
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">Every major Nifty 50 crash — and how SIP investors came out ahead:</p>
-      {crashes.map(c => (
-        <div key={c.year} className="rounded-2xl p-4 border flex items-center justify-between" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <div><p className="font-mono text-sm font-bold text-white">{c.year}</p><p className="font-sans text-xs text-white/30">Recovery: {c.recovery}</p></div>
-          <div className="text-right"><p className="font-mono text-sm" style={{ color: 'var(--danger)' }}>{c.drop}</p><p className="font-sans text-[10px]" style={{ color: 'var(--teal)' }}>{c.sip}</p></div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SipVsLumpsum() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">During a crash, SIP investors benefit by buying more units at lower prices.</p>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <p className="text-[9px] font-sans font-bold tracking-wider text-white/25 uppercase mb-2">₹60K lump sum</p>
-          <p className="font-display font-semibold text-lg text-white">₹78,000</p>
-          <p className="font-sans text-[10px] text-white/30 mt-1">After 10 years through 2008</p>
-        </div>
-        <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--teal)', borderWidth: '2px' }}>
-          <p className="text-[9px] font-sans font-bold tracking-wider text-white/25 uppercase mb-2">₹500/month SIP</p>
-          <p className="font-display font-semibold text-lg" style={{ color: 'var(--teal)' }}>₹1,12,000</p>
-          <p className="font-sans text-[10px] text-white/30 mt-1">Bought dips automatically</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FDTrap() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">"Safe" money in a fixed deposit is the risky choice over 10 years.</p>
-      <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <p className="font-sans text-xs text-white/40 mb-3">₹1,00,000 in FD for 10 years at 6.8%</p>
-        <div className="flex justify-between items-end">
-          <div><p className="text-white/25 text-[9px] uppercase">Nominal</p><p className="font-display font-semibold text-white">₹1,93,000</p></div>
-          <div className="text-right"><p className="text-white/25 text-[9px] uppercase">Real (after inflation)</p><p className="font-display font-semibold" style={{ color: 'var(--danger)' }}>₹1,09,000</p></div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function First100() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">₹100/month becomes:</p>
-      {[{ y: 10, v: 23000 }, { y: 20, v: 95000 }, { y: 30, v: 350000 }].map(r => (
-        <div key={r.y} className="rounded-2xl p-4 border flex justify-between items-center" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <p className="font-sans text-sm text-white/50">{r.y} years</p>
-          <p className="font-display font-semibold" style={{ color: 'var(--teal)' }}>{formatINR(r.v)}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SipExplainer() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">Day 1: ₹500 leaves your account automatically. It buys X units of the fund at today's NAV.</p>
-      <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <p className="font-sans text-xs text-white/50">Month 1: NAV ₹50 → 10 units</p>
-        <p className="font-sans text-xs text-white/50">Month 2: NAV ₹45 → 11.1 units</p>
-        <p className="font-sans text-xs text-white/50">Month 3: NAV ₹55 → 9.1 units</p>
-        <p className="font-sans text-xs text-white/30 mt-2">Total: ₹1,500 invested, 30.2 units, worth ₹1,661.</p>
-      </div>
-    </div>
-  )
-}
-
-function MoneyFlow() {
-  const steps = ['Your bank account', 'AMC (Asset Management Company)', 'Custodian Bank', 'Stocks / Bonds']
-  return (
-    <div className="space-y-3">
-      {steps.map((step, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'var(--surface)', color: 'var(--teal)' }}>{i + 1}</div>
-          <p className="font-sans text-sm text-white/60">{step}</p>
-          {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-white/20" />}
-        </div>
-      ))}
-      <p className="font-sans text-xs text-white/40 italic mt-2">Your money never sits with the fund manager — it goes to a custodian bank regulated by SEBI.</p>
-    </div>
-  )
-}
-
-function FundFactSheet() {
-  const rows = [
-    { l: 'Fund Name', v: 'SBI Nifty 50 Index Fund' }, { l: 'NAV', v: '₹186.42' }, { l: 'Expense Ratio', v: '0.10%' },
-    { l: 'AUM', v: '₹5,234 Cr' }, { l: '1Y Return', v: '+18.4%' }, { l: '5Y Return', v: '+14.2% CAGR' },
-  ]
-  return (
-    <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-      <p className="text-[9px] font-sans font-bold tracking-wider text-white/25 uppercase mb-3">Sample Fund Fact Sheet</p>
-      {rows.map(r => (
-        <div key={r.l} className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-          <span className="font-sans text-xs text-white/40">{r.l}</span>
-          <span className="font-sans text-xs text-white/70">{r.v}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ActiveVsPassive() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">In 2023, <strong className="text-white">84% of large-cap active funds underperformed the Nifty 50</strong> index over 10 years. (Source: SPIVA India Report)</p>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--danger)' }}>
-          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">Active funds avg</p>
-          <p className="font-display text-xl font-bold" style={{ color: 'var(--danger)' }}>11.2%</p>
-        </div>
-        <div className="rounded-2xl p-4 border text-center" style={{ background: 'var(--surface)', borderColor: 'var(--teal)' }}>
-          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">Nifty 50 Index</p>
-          <p className="font-display text-xl font-bold" style={{ color: 'var(--teal)' }}>14.0%</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function AskKinu() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">Ask KINU your most confusing question. He explains everything without jargon.</p>
-      <p className="font-sans text-xs text-white/40">Pro tip: Start with the terms you haven't learned yet from the Glossary.</p>
-    </div>
-  )
-}
-
-function SebiProtection() {
-  const milestones = [
-    { y: '1993', e: 'SEBI established' }, { y: '1996', e: 'Mutual funds regulated' },
-    { y: '2017', e: 'Total expense ratio caps' }, { y: '2020', e: 'Fund categorization standardized' },
-  ]
-  return (
-    <div className="space-y-3">
-      {milestones.map(m => (
-        <div key={m.y} className="flex items-center gap-3 rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <Check className="w-4 h-4 shrink-0" style={{ color: 'var(--teal)' }} />
-          <div><p className="font-mono text-sm font-bold text-white">{m.y}</p><p className="font-sans text-xs text-white/40">{m.e}</p></div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function RedFlagQuiz() {
-  const questions = [
-    { q: '"Fund guarantees 40% annual returns"', a: false, e: 'No fund can guarantee returns. SEBI prohibits this.' },
-    { q: '"SEBI registered AMC, NAV published daily"', a: true, e: 'This is how regulated funds operate — fully transparent.' },
-    { q: '"WhatsApp group promising 3x in 6 months"', a: false, e: 'Classic scam. No legitimate investment promises specific multipliers.' },
-    { q: '"Monthly statement from CAMS/KFintech"', a: true, e: 'These are SEBI-authorized registrars. Legitimate operations.' },
-    { q: '"This fund only accepts cash deposits"', a: false, e: 'Legitimate funds only accept bank transfers.' },
-  ]
-  const [cur, setCur] = useState(0)
-  const [score, setScore] = useState(0)
-  const [answered, setAnswered] = useState(false)
-  const [userAns, setUserAns] = useState<boolean | null>(null)
-  const done = cur >= questions.length
-
-  const answer = (isLegit: boolean) => { setUserAns(isLegit); setAnswered(true); if (isLegit === questions[cur].a) setScore(s => s + 1) }
-  const next = () => { setCur(c => c + 1); setAnswered(false); setUserAns(null) }
-
-  if (done) return <p className="font-sans text-sm" style={{ color: 'var(--teal)' }}>You scored {score}/{questions.length}. You can spot a scam. ✓</p>
-
-  const q = questions[cur]
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-xs text-white/30">{cur + 1} of {questions.length}</p>
-      <p className="font-sans text-sm text-white/70">{q.q}</p>
-      {!answered ? (
-        <div className="flex gap-3">
-          <button onClick={() => answer(true)} className="flex-1 py-3 rounded-xl font-sans text-sm border" style={{ borderColor: 'var(--border)', color: 'var(--teal)' }}>Legit</button>
-          <button onClick={() => answer(false)} className="flex-1 py-3 rounded-xl font-sans text-sm border" style={{ borderColor: 'var(--border)', color: 'var(--danger)' }}>Scam</button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <p className="font-sans text-sm font-medium" style={{ color: userAns === q.a ? 'var(--teal)' : 'var(--danger)' }}>{userAns === q.a ? 'Correct!' : 'Wrong!'}</p>
-          <p className="font-sans text-xs text-white/40">{q.e}</p>
-          <button onClick={next} className="text-[10px] font-sans font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>{cur < questions.length - 1 ? 'Next →' : 'See score'}</button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function DueDiligenceChecklist() {
-  const items = ['Is it SEBI registered?', 'Is NAV published daily on AMFI?', 'Is expense ratio below 1%?', 'Can you withdraw anytime?', 'Is the custodian a major bank?']
-  const [checked, setChecked] = useState<boolean[]>(items.map(() => false))
-  return (
-    <div className="space-y-3">
-      {items.map((item, i) => (
-        <button key={i} onClick={() => { const c = [...checked]; c[i] = !c[i]; setChecked(c) }}
-          className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-[border-color,background-color] duration-200"
-          style={{ background: checked[i] ? 'rgba(29,158,117,0.05)' : 'var(--surface)', borderColor: checked[i] ? 'rgba(29,158,117,0.2)' : 'var(--border)' }}
-        >
-          <div className="w-5 h-5 rounded border flex items-center justify-center shrink-0" style={{ borderColor: checked[i] ? 'var(--teal)' : 'var(--border)' }}>
-            {checked[i] && <Check className="w-3 h-3" style={{ color: 'var(--teal)' }} />}
-          </div>
-          <span className="font-sans text-sm" style={{ color: checked[i] ? 'var(--teal)' : 'rgba(255,255,255,0.5)' }}>{item}</span>
-        </button>
-      ))}
-      {checked.every(c => c) && <p className="font-sans text-sm" style={{ color: 'var(--teal)' }}>All clear — it's legitimate. ✓</p>}
-    </div>
-  )
-}
-
-function DataSources() {
-  return (
-    <div className="space-y-3">
-      {[{ n: 'NSE India', d: 'Nifty 50 data', u: 'nseindia.com' }, { n: 'RBI', d: 'CPI inflation data', u: 'rbi.org.in' }, { n: 'AMFI', d: 'Fund NAV data', u: 'amfiindia.com' }, { n: 'SEBI', d: 'Regulations', u: 'sebi.gov.in' }].map(s => (
-        <div key={s.n} className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <p className="font-sans text-sm font-medium text-white">{s.n}</p>
-          <p className="font-sans text-xs text-white/40">{s.d}</p>
-          <p className="font-sans text-[10px] mt-1" style={{ color: 'var(--accent)' }}>{s.u} ↗</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function IndexFundExplainer() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">The Nifty 50 is a list of India's 50 largest companies. An index fund buys all 50.</p>
-      {[{ n: 'Reliance', w: '10.2%' }, { n: 'HDFC Bank', w: '8.1%' }, { n: 'Infosys', w: '6.8%' }, { n: 'TCS', w: '5.4%' }].map(c => (
-        <div key={c.n} className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-          <span className="font-sans text-sm text-white/60">{c.n}</span>
-          <span className="font-mono text-sm text-white/40">{c.w}</span>
-        </div>
-      ))}
-      <p className="font-sans text-xs text-white/40 italic">No one decided this. The market decided.</p>
-    </div>
-  )
-}
-
-function FeeCalculator() {
-  const [expense, setExpense] = useState(1.5)
-  const monthly = 5000; const yrs = 20
-  const totalInvested = monthly * yrs * 12
-  const withFee = totalInvested * Math.pow(1 + (0.14 - expense / 100), yrs) * 0.45
-  const withoutFee = totalInvested * Math.pow(1 + (0.14 - 0.001), yrs) * 0.45
-  const feeLost = withoutFee - withFee
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="font-sans text-[11px] text-white/40 uppercase tracking-wider block mb-2">Expense ratio: {expense}%</label>
-        <input type="range" min={0.1} max={2.5} step={0.1} value={expense} onChange={e => setExpense(Number(e.target.value))}
-          className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{ accentColor: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }} />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--danger)' }}>
-          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">Fees lost ({expense}%)</p>
-          <p className="font-display font-semibold text-lg" style={{ color: 'var(--danger)' }}>{formatINR(feeLost)}</p>
-        </div>
-        <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--teal)' }}>
-          <p className="text-[9px] font-sans text-white/25 uppercase mb-1">You keep (0.1%)</p>
-          <p className="font-display font-semibold text-lg" style={{ color: 'var(--teal)' }}>{formatINR(withoutFee)}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function IndiaGrowth() {
-  return (
-    <div className="space-y-4">
-      <p className="font-sans text-sm text-white/60 leading-relaxed">You're not betting on a person. You're betting on India.</p>
-      <p className="font-sans text-xs text-white/40">India — projected 3rd largest economy by 2030. The index reflects that growth.</p>
-    </div>
-  )
-}
-
-function ZeroTrustStart() {
-  const steps = ['Open a demat account (Zerodha / Groww)', 'Search "Nifty 50 index fund"', 'Filter by expense ratio below 0.2%', 'Set up ₹500/month SIP', 'Don\'t look at it for 12 months']
-  return (
-    <div className="space-y-3">
-      {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl p-3 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: 'rgba(192,241,142,0.08)', color: 'var(--accent)' }}>{i + 1}</div>
-          <p className="font-sans text-xs text-white/55">{s}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // ── MAIN LEARN PAGE ─────────────────────────────────────────────────────────
 
@@ -505,21 +202,14 @@ export default function LearnPage() {
   const navigate = useNavigate()
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const completedModules = useAppStore(s => s.completedModules)
-  const completeModule = useAppStore(s => s.completeModule)
   const simulationResult = useAppStore(s => s.simulationResult)
   const timeMachineResult = useAppStore(s => s.timeMachineResult)
-  const setDashboardSection = useAppStore(s => s.setDashboardSection)
 
   const [activeTab, setActiveTab] = useState<'roadmap' | 'glossary' | 'modules'>('modules')
-  const [activeModule, setActiveModule] = useState(0)
   const [search, setSearch] = useState('')
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null)
   const [catFilter, setCatFilter] = useState<string>('all')
-  const [showOtherTracks, setShowOtherTracks] = useState(false)
 
-  const modules = getModulesForFear(fearType)
-  const curriculumTrack = getTrackForFear(fearType)
-  const completedCount = modules.filter(m => completedModules.includes(m.id)).length
   const trackName = TRACK_NAMES[fearType as FearTrack] || 'Your Track'
 
   // Glossary search + filter
@@ -537,7 +227,7 @@ export default function LearnPage() {
   const roadmap: RoadmapStep[] = ROADMAP_STEPS.map(s => ({
     ...s,
     status: s.step === 1 ? 'done'
-      : s.step === 2 ? (completedModules.length >= 10 ? 'done' : completedModules.length > 0 ? 'current' : 'locked')
+      : s.step === 2 ? ((completedModules || []).length >= 10 ? 'done' : 'current')
         : s.step === 3 ? (simulationResult ? 'done' : 'current')
           : s.step === 4 ? (timeMachineResult ? 'done' : simulationResult ? 'current' : 'locked')
             : s.step <= 3 ? 'locked' : 'locked',

@@ -11,7 +11,6 @@ interface LoginModalProps {
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const navigate = useNavigate()
-  const setView = useAppStore(s => s.setView)
   const userName = useAppStore(s => s.userName)
   const fearType = useAppStore(s => s.fearType)
   const updateStreak = useAppStore(s => s.updateStreak)
@@ -26,11 +25,34 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password.')
+      return
+    }
 
     setLoading(true)
     setError('')
 
+    // FIREBASE SYNC OVERRIDE ───────────────────────────────────────────────
+    const { isFirebaseConfigured, auth } = await import('../../lib/firebase')
+    
+    if (isFirebaseConfigured && auth) {
+      try {
+        const { signInWithEmailAndPassword } = await import('firebase/auth')
+        await signInWithEmailAndPassword(auth, email, password)
+        setLoading(false)
+        onClose()
+        navigate('/dashboard/home')
+        return
+      } catch (err: any) {
+        setLoading(false)
+        console.error("Firebase Auth Error:", err)
+        setError('Invalid credentials or no profile found.')
+        return
+      }
+    }
+
+    // FALLBACK MOCK LOGIN ──────────────────────────────────────────────────
     // Simulate login delay
     await new Promise(r => setTimeout(r, 600))
 

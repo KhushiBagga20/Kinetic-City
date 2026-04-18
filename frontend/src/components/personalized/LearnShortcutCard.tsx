@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useAppStore } from '../../store/useAppStore'
 import { BookOpen, ArrowRight } from 'lucide-react'
+import { getTrackForFear } from '../../lib/curriculumData'
 
 /* ── Topic pills for beginners ───────────────────────────────────────────── */
 
@@ -11,31 +12,6 @@ const BEGINNER_TOPICS = [
   { label: 'Expense ratio', moduleIndex: 3 },
 ]
 
-/* ── Next module name by track ───────────────────────────────────────────── */
-
-const TRACK_MODULE_NAMES: Record<string, string[]> = {
-  loss: ['Why your brain hates losing money', 'The recovery truth', 'Your first ₹100 SIP', 'What is a Nifty 50 Index Fund?', 'The 70-year proof', 'How KINETIC\'s simulators work', 'SIP vs Lumpsum vs FD', 'Reading the Monte Carlo fan chart', 'The ₹500 Time Machine', 'Set up your first goal'],
-  jargon: ['The Jargon Graveyard', 'NAV — the only number', 'SIP — automatic investing', 'Expense ratio', 'CAGR vs absolute returns', 'How KINETIC\'s simulators work', 'SIP vs Lumpsum vs FD', 'Reading the Monte Carlo fan chart', 'Build your first SIP calculation', 'Set up your first goal'],
-  scam: ['How SEBI protects your money', 'Red flags in fake schemes', 'Why index funds can\'t scam you', 'The AMFI verification method', 'Reading a mutual fund factsheet', 'How KINETIC\'s simulators work', 'SIP vs Lumpsum vs FD', 'Reading the Monte Carlo fan chart', 'Verify a real fund', 'Set up your first goal'],
-  trust: ['Why banks want your money in FDs', 'The math of index funds vs FDs', 'Compound interest', 'Direct plans vs regular plans', '0.1% expense ratio advantage', 'How KINETIC\'s simulators work', 'SIP vs Lumpsum vs FD', 'Reading the Monte Carlo fan chart', 'The fee X-ray', 'Set up your first goal'],
-}
-
-/* ── Module type tags ────────────────────────────────────────────────────── */
-
-function getModuleType(index: number): string {
-  if (index < 5) return 'Concept'
-  if (index === 5) return 'Tool'
-  if (index === 6) return 'Tool'
-  if (index === 7) return 'Concept'
-  if (index === 8) return 'Simulation'
-  return 'Tool'
-}
-
-function getModuleTime(index: number): string {
-  const times = ['4 min', '5 min', '3 min', '5 min', '5 min', '5 min', '6 min', '4 min', '5 min', '3 min']
-  return times[index] || '4 min'
-}
-
 /* ── Component ───────────────────────────────────────────────────────────── */
 
 export default function LearnShortcutCard() {
@@ -43,13 +19,14 @@ export default function LearnShortcutCard() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
 
-  const trackModules = [...new Set(completedModules)].filter(m => m.startsWith(fearType))
+  const track = getTrackForFear(fearType)
+  const trackModules = [...new Set(completedModules || [])].filter(m => track.some(tm => tm.id === m))
   const trackCount = trackModules.length
   const hasCompletedBasics = trackCount >= 5
 
-  const moduleNames = TRACK_MODULE_NAMES[fearType] || TRACK_MODULE_NAMES.loss
-  const nextModuleIndex = Math.min(trackCount, 9)
-  const nextModuleName = moduleNames[nextModuleIndex]
+  const nextModuleIndex = Math.min(trackCount, track.length - 1)
+  const nextModule = track[nextModuleIndex]
+  const nextModuleName = nextModule.title
 
   return (
     <motion.div
@@ -106,9 +83,9 @@ export default function LearnShortcutCard() {
               <div className="flex items-center gap-2 mt-1">
                 <span className="px-2 py-0.5 rounded font-sans text-[10px]"
                   style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)' }}>
-                  {getModuleType(nextModuleIndex)}
+                  {nextModule.type}
                 </span>
-                <span className="font-sans text-[10px] text-white/20">{getModuleTime(nextModuleIndex)}</span>
+                <span className="font-sans text-[10px] text-white/20">{nextModule.estimatedMinutes} min</span>
               </div>
             </div>
 

@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { Send } from 'lucide-react'
 import { fetchKinuNewsContext } from '../../../lib/newsAPI'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { generateKinuChat } from '../../../lib/kinuAI'
+import { askKinuCurriculum } from '../../../lib/simulateAI'
+import { getTrackForFear } from '../../../lib/curriculumData'
 
 // ── Fear-specific first messages ────────────────────────────────────────────
 
@@ -26,7 +27,6 @@ interface Message {
 
 export default function KinuPage() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const metaphorStyle = useAppStore(s => s.metaphorStyle) ?? 'generic'
   const rawName = useAppStore(s => s.userName)
   const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : 'there'
 
@@ -40,6 +40,8 @@ export default function KinuPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [newsContext, setNewsContext] = useState('')
+  const [mode, setMode] = useState<'chat' | 'curriculum'>('chat')
+  const [curriculumSummary, setCurriculumSummary] = useState('')
 
   // Fetch news context for KINU on mount
   useEffect(() => {
@@ -47,6 +49,12 @@ export default function KinuPage() {
       if (ctx) setNewsContext(ctx)
     })
   }, [])
+
+  // Precompute curriculum summary for RAG
+  useEffect(() => {
+    const track = getTrackForFear(fearType)
+    setCurriculumSummary(track.map(m => `- ${m.title} (${m.type})`).join('\n'))
+  }, [fearType])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -68,29 +76,23 @@ export default function KinuPage() {
     }))
 
     try {
-      const res = await fetch(`${API_BASE}/api/mentor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (mode === 'curriculum') {
+        const reply = await askKinuCurriculum(text.trim(), fearType, curriculumSummary)
+        setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      } else {
+        const data = await generateKinuChat({
           message: text.trim(),
           fear_type: fearType,
-          metaphor_style: metaphorStyle,
-          context: newsContext
-            ? `kinu_chat_page\n\nCurrent market context: ${newsContext}`
-            : 'kinu_chat_page',
+          context: newsContext ? `kinu_chat_page\n\nCurrent market context: ${newsContext}` : 'kinu_chat_page',
           conversation_history: history,
-        }),
-      })
-
-      if (!res.ok) throw new Error('API error')
-
-      const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+        })
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      }
     } catch {
-      setError('KINU is currently offline. Make sure the backend is running on port 8000.')
+      setError('KINU AI is currently offline. Please check your internet connection or API keys.')
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Please make sure the backend server is running. In the meantime, feel free to explore the Learn section — it has answers to many common questions.",
+        content: "I'm having trouble connecting right now to the Vertex AI servers. Please try again in a moment.",
       }])
     } finally {
       setIsTyping(false)
@@ -110,6 +112,21 @@ export default function KinuPage() {
         <div>
           <h2 className="font-display font-semibold text-lg text-white tracking-tight">KINU</h2>
           <p className="font-sans text-[11px] text-white/30 uppercase tracking-[0.12em]">Kinetic Intelligence Neural User</p>
+        </div>
+        
+        <div className="ml-auto flex bg-white/5 rounded-full p-1 border border-white/10">
+          <button
+            onClick={() => setMode('chat')}
+            className={`px-4 py-1.5 rounded-full text-[11px] font-sans font-medium uppercase tracking-wider transition-colors ${mode === 'chat' ? 'bg-[var(--accent)] text-[#0a1a00]' : 'text-white/50 hover:text-white/80'}`}
+          >
+            General
+          </button>
+          <button
+            onClick={() => setMode('curriculum')}
+            className={`px-4 py-1.5 rounded-full text-[11px] font-sans font-medium uppercase tracking-wider transition-colors ${mode === 'curriculum' ? 'bg-[var(--accent)] text-[#0a1a00]' : 'text-white/50 hover:text-white/80'}`}
+          >
+            Curriculum
+          </button>
         </div>
       </div>
 

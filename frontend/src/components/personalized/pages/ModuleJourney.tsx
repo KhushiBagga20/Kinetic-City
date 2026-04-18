@@ -1,9 +1,11 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../../store/useAppStore'
 import { getTrackForFear } from '../../../lib/curriculumData'
-import { ArrowLeft, Check, FastForward } from 'lucide-react'
+import { ArrowLeft, Check, Activity } from 'lucide-react'
+import { getModulesForFear } from './LearnPage'
+import { generateKinuChat } from '../../../lib/kinuAI'
 
 // --- Playful SVG Components ---
 function InteractiveSnowball() {
@@ -57,18 +59,14 @@ function PanicSlider() {
   )
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-
 export default function ModuleJourney() {
   const navigate = useNavigate()
   const activeModuleId = useAppStore(s => s.activeModuleId)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const metaphorStyle = useAppStore(s => s.metaphorStyle) ?? 'generic'
   const completeModule = useAppStore(s => s.completeModule)
   const completedModules = useAppStore(s => s.completedModules)
 
   const track = getTrackForFear(fearType)
-  const [step, setStep] = useState(0)
 
   // AI State
   const [kinuReaction, setKinuReaction] = useState<string | null>(null)
@@ -78,19 +76,12 @@ export default function ModuleJourney() {
     setKinuLoading(true)
     setKinuReaction(null)
     try {
-      const res = await fetch(`${API_BASE}/api/mentor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `The user just read the module '${activeModuleId}' and felt: '${feeling}'. Give them a very brief (2 sentences max), encouraging and insightful response tailored to their fear type.`,
-          fear_type: fearType,
-          metaphor_style: metaphorStyle,
-          context: 'module_journey_feedback',
-          conversation_history: [],
-        }),
+      const data = await generateKinuChat({
+        message: `The user just read the module '${activeModuleId}' and felt: '${feeling}'. Give them a very brief (2 sentences max), encouraging and insightful response tailored to their fear type.`,
+        fear_type: fearType,
+        context: 'module_journey_feedback',
+        conversation_history: [],
       })
-      if (!res.ok) throw new Error('API error')
-      const data = await res.json()
       setKinuReaction(data.reply)
     } catch {
       setKinuReaction("I'm having trouble connecting to my servers right now, but keep going! You're doing great.")
@@ -114,23 +105,17 @@ export default function ModuleJourney() {
 
   const currentModule = track[activeModuleIndex]
   const isCompleted = completedModules.includes(currentModule.id)
+  
+  // Real Content extraction
+  const contentModules = getModulesForFear(fearType)
+  const contentModule = contentModules.find(m => m.id === activeModuleId)
 
-  // Fake narrative parts for the journey
-  const narrative = [
-    { text: "Welcome to the real game. We're going to break down how to actually build wealth without being glued to a screen." },
-    { type: "widget", widget: currentModule.id.includes('loss') ? <PanicSlider /> : <InteractiveSnowball /> },
-    { text: "It's all about making the math invisible. KINU handles the tracking, you just handle the consistency." }
-  ]
-
-  const handleNext = () => {
-    if (step < narrative.length - 1) {
-      setStep(s => s + 1)
-    } else {
-      if (!isCompleted) {
-        completeModule(currentModule.id, currentModule.fearProgressIncrement)
-      }
-      navigate('/dashboard/learn')
-    }
+  // Example Live Context based on Fear Type
+  const liveContextMap: Record<string, string> = {
+    'loss': 'Markets saw a sudden 1.2% dip today. This module is perfectly timed to help you understand why your instincts want to sell, and why holding is statistically safer right now.',
+    'jargon': 'There is a lot of buzz today around "XIRR" in the news. This module will help you speak the language effortlessly.',
+    'scam': 'A new crypto phishing scam is trending today. Master this module to build your impenetrable filter.',
+    'trust': 'Active funds generally underperformed the Nifty 50 again this week. This module shows you why automation beats speculation.'
   }
 
   return (
@@ -138,14 +123,13 @@ export default function ModuleJourney() {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[300] flex flex-col pt-[60px]"
-      style={{ background: 'var(--bg)' }}
+      className="fixed inset-0 z-[300] bg-[var(--bg)] overflow-y-auto pb-[120px]"
     >
       {/* Immersive Top Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
         <button
           onClick={() => navigate('/dashboard/learn')}
-          className="flex items-center gap-2 font-sans text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
+          className="flex items-center gap-2 font-sans text-sm font-medium text-white/50 hover:text-white/80 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Exit Journey
         </button>
@@ -157,8 +141,8 @@ export default function ModuleJourney() {
         </div>
       </div>
 
-      {/* Scrolling Experiential Content */}
-      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+      {/* Experiential Content */}
+      <div className="w-full">
         <div className="max-w-2xl mx-auto px-6 py-16">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -168,84 +152,110 @@ export default function ModuleJourney() {
             {currentModule.title}
           </motion.h1>
 
-          <div className="space-y-12 mt-12 pb-32">
-            <AnimatePresence>
-              {narrative.slice(0, step + 1).map((n, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30, filter: 'blur(5px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
-                >
-                  {n.type === 'widget' ? (
-                    n.widget
-                  ) : (
-                    <p className="font-sans text-lg md:text-xl text-white/80 leading-relaxed font-light">
-                      {n.text}
-                    </p>
-                  )}
+          <div className="space-y-16 mt-12 pb-48">
+            
+            {/* 1. Live AI News Impact Context */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }} 
+              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} 
+              viewport={{ once: true, margin: "-10%" }} 
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="rounded-2xl p-6 relative overflow-hidden group"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              {/* Glassmorphic hover spot */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-[#378ADD] animate-pulse" />
+                <h4 className="font-mono text-xs text-[#378ADD] uppercase tracking-widest">Live Context</h4>
+              </div>
+              <p className="font-sans text-sm text-white/80 leading-relaxed font-light">
+                {liveContextMap[fearType]}
+              </p>
+            </motion.div>
 
-                  {/* KINU Pop-in Response (Faux) */}
-                  {i === Math.floor(narrative.length / 2) && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.8, type: 'spring' }}
-                      className="mt-6 flex gap-3 p-4 rounded-2xl bg-white/5 border border-white/10"
-                    >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-display text-[10px] font-bold shrink-0" style={{ background: 'rgba(192,241,142,0.08)', color: 'var(--accent)' }}>
-                        K
-                      </div>
-                      <div className="flex-1">
-                        {!kinuReaction && !kinuLoading ? (
-                          <>
-                            <p className="font-sans text-sm text-white/70 italic">"How are you feeling about this?"</p>
-                            <div className="flex gap-2 mt-3">
-                              <button onClick={() => askKinu("I'm confused")} className="px-3 py-1.5 rounded-full text-xs font-sans border border-white/10 text-white/50 hover:bg-white/5 transition-colors">I'm confused 🤔</button>
-                              <button onClick={() => askKinu("Makes sense")} className="px-3 py-1.5 rounded-full text-xs font-sans border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 transition-colors">Makes sense 💡</button>
-                            </div>
-                          </>
-                        ) : kinuLoading ? (
-                          <div className="flex gap-1.5 mt-2">
-                            {[0, 1, 2].map(dot => (
-                              <motion.div key={dot} className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
-                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.2 }}
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-sans text-sm text-white/80 leading-relaxed">
-                            {kinuReaction}
-                          </motion.p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {/* 2. Main Content Module (Cinematic Reveal) */}
+            <motion.div 
+              initial={{ opacity: 0, y: 40 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true, margin: "-5%" }} 
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+            >
+              {contentModule ? contentModule.content : (
+                <div className="flex flex-col gap-8">
+                   {currentModule.id.includes('loss') ? <PanicSlider /> : <InteractiveSnowball />}
+                   <p className="font-sans text-lg text-white/80 leading-relaxed font-light">Immersive content loading...</p>
+                </div>
+              )}
+            </motion.div>
+
+            {/* 3. Embedded KINU Micro-Interaction */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-10%" }}
+              transition={{ duration: 0.6 }}
+              className="flex gap-4 p-6 rounded-3xl bg-[#0a0a0f]/50 border border-white/5 shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-20" />
+              
+              <div className="w-10 h-10 rounded-full flex items-center justify-center font-display text-sm font-bold shrink-0 self-start mt-1" style={{ background: 'rgba(192,241,142,0.1)', color: 'var(--accent)', border: '1px solid rgba(192,241,142,0.2)' }}>
+                K
+              </div>
+              <div className="flex-1">
+                {!kinuReaction && !kinuLoading ? (
+                  <>
+                    <p className="font-sans text-sm md:text-base text-white/70 italic mb-4">"Alright, you made it through this module. How did that sit with you?"</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => askKinu("I'm confused")} className="px-4 py-2 rounded-full text-xs font-sans border border-white/10 text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer">I'm confused 🤔</button>
+                      <button onClick={() => askKinu("Makes sense")} className="px-4 py-2 rounded-full text-xs font-sans border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/5 hover:bg-[var(--accent)]/15 transition-colors shadow-[0_0_15px_rgba(192,241,142,0.1)] cursor-pointer">Makes sense 💡</button>
+                    </div>
+                  </>
+                ) : kinuLoading ? (
+                  <div className="flex gap-2 mt-4">
+                    {[0, 1, 2].map(dot => (
+                      <motion.div key={dot} className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(192,241,142,0.5)]"
+                        animate={{ opacity: [0.2, 1, 0.2], scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.2 }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <p className="font-sans text-sm md:text-base text-white/90 leading-relaxed font-light">
+                      {kinuReaction}
+                    </p>
+                    <button onClick={() => setKinuReaction(null)} className="mt-4 text-[10px] uppercase tracking-widest text-white/30 hover:text-white/50 transition-colors">Reset</button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Floating Action Bar */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm rounded-[32px] p-2 bg-[#0a0a0f]/90 backdrop-blur-xl border border-white/10 flex items-center justify-between shadow-2xl">
-        <div className="px-4 font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent)' }}>
-          {step < narrative.length - 1 ? `Step ${step + 1} / ${narrative.length}` : 'Ready'}
+      {/* Persistent Bottom Completion Bar */}
+      <motion.div 
+        initial={{ y: 100 }} 
+        animate={{ y: 0 }} 
+        transition={{ delay: 0.5, type: 'spring', damping: 20 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm rounded-[32px] p-2 bg-[#050508]/90 backdrop-blur-2xl border border-white/10 flex items-center justify-between shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-[400]"
+      >
+        <div className="px-4 flex items-center gap-2">
+           <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(192,241,142,0.5)] animate-pulse" />
+           <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--accent)]">Journey Active</span>
         </div>
         <button
-          onClick={handleNext}
-          className="px-6 py-3 rounded-full font-sans text-sm font-bold active:scale-[0.97] transition-[transform,background-color] duration-200 flex items-center gap-2"
-          style={{ background: step < narrative.length - 1 ? 'rgba(255,255,255,0.08)' : 'var(--accent)', color: step < narrative.length - 1 ? 'white' : '#0a1a00' }}
+          onClick={() => {
+            if (!isCompleted) completeModule(currentModule.id, currentModule.fearProgressIncrement)
+            navigate('/dashboard/learn')
+          }}
+          className="px-6 py-3 rounded-full font-sans text-sm font-bold active:scale-[0.97] transition-[transform,background-color] duration-200 flex items-center gap-2 bg-[var(--accent)] text-[#0a1a00] hover:bg-opacity-90 cursor-pointer"
         >
-          {step < narrative.length - 1 ? (
-            <>Next <FastForward className="w-3.5 h-3.5" /></>
-          ) : (
-            <>Complete <Check className="w-4 h-4" /></>
-          )}
+          {isCompleted ? 'Return' : 'Mark Complete'} <Check className="w-4 h-4" />
         </button>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }

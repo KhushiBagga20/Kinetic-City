@@ -93,6 +93,40 @@ export default function SignUp({ onComplete }: SignUpProps) {
     setUserAge(userAge)
     setSipSetupDate(new Date().toISOString().split('T')[0])
 
+    // FIREBASE SYNC OVERRIDE ───────────────────────────────────────────────
+    const { isFirebaseConfigured, auth, db } = await import('../../lib/firebase')
+    
+    if (isFirebaseConfigured && auth && db) {
+      try {
+        const { createUserWithEmailAndPassword } = await import('firebase/auth')
+        const { doc, setDoc } = await import('firebase/firestore')
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, password)
+        const user = userCredential.user
+
+        // Save foundational profile to Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          userName: trimmedName,
+          userAge: userAge,
+          fearType: savedFearType ?? 'loss',
+          metaphorStyle: savedMetaphor ?? 'generic',
+          createdAt: new Date().toISOString()
+        })
+        
+        useAppStore.setState({ userId: user.uid, isAuthenticated: true })
+        updateStreak()
+        await new Promise(resolve => setTimeout(resolve, 400))
+        onComplete()
+        return
+      } catch (err: any) {
+        setLoading(false)
+        console.error("Firebase Auth Error:", err)
+        setError('Could not create account: ' + err.message)
+        return
+      }
+    }
+
+    // FALLBACK MOCK API LOGIN ──────────────────────────────────────────────
     // Call backend to create user
     try {
       const res = await postCreateUser({

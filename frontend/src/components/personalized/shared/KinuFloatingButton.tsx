@@ -17,14 +17,43 @@ export default function KinuFloatingButton() {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const userName = useAppStore(s => s.userName) || 'there'
 
-  function handleSend() {
+  async function handleSend() {
     if (!input.trim()) return
+    const userText = input.trim()
+    setInput('')
+    
+    // Add user message immediately
     setMessages(m => [
       ...m,
-      { role: 'user', text: input.trim() },
-      { role: 'kinu', text: "I'm KINU, your financial intelligence. Full AI chat is coming soon — for now, explore the modules on your dashboard. They're personalized for your fear type." },
+      { role: 'user', text: userText }
     ])
-    setInput('')
+
+    // Build chat history
+    const history = messages.map(m => ({
+      role: m.role === 'kinu' ? 'assistant' : 'user',
+      content: m.text
+    }))
+
+    try {
+      const { generateKinuChat } = await import('../../../lib/kinuAI')
+      const data = await generateKinuChat({
+        message: userText,
+        fear_type: fearType,
+        context: 'Floating button chat overlay',
+        conversation_history: history,
+      })
+      
+      setMessages(m => [
+        ...m,
+        { role: 'kinu', text: data.reply }
+      ])
+    } catch (err: any) {
+      console.error(err)
+      setMessages(m => [
+        ...m,
+        { role: 'kinu', text: "I'm having trouble connecting to my neural network. Please check your API permissions." }
+      ])
+    }
   }
 
   return (

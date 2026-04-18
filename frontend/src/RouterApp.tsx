@@ -24,27 +24,31 @@ function DashboardRoute() {
   const activeModuleId = useAppStore(s => s.activeModuleId)
   const setActiveModuleId = useAppStore(s => s.setActiveModuleId)
 
+  // Sync URL to Store
   useEffect(() => {
-    // If we're on a module route
     if (moduleId) {
-      if (dashboardSection !== 'module-reader') {
-        setDashboardSection('module-reader')
-      }
-      if (activeModuleId !== moduleId) {
-        setActiveModuleId(moduleId)
-      }
+      if (dashboardSection !== 'module-reader') setDashboardSection('module-reader')
+      if (activeModuleId !== moduleId) setActiveModuleId(moduleId)
     } else if (section) {
-      if (section !== dashboardSection) {
-        setDashboardSection(section)
-      }
-      if (activeModuleId !== null) {
-        setActiveModuleId(null)
-      }
+      if (section !== dashboardSection) setDashboardSection(section)
+      if (activeModuleId !== null) setActiveModuleId(null)
     } else {
-      // Default to home if no section provided
       navigate('/dashboard/home', { replace: true })
     }
-  }, [section, moduleId, dashboardSection, activeModuleId, setDashboardSection, setActiveModuleId, navigate])
+    // Deliberately omitting dashboardSection and activeModuleId so it only triggers on URL change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, moduleId, navigate, setDashboardSection, setActiveModuleId])
+
+  // Sync Store to URL
+  useEffect(() => {
+    if (dashboardSection === 'module-reader') {
+      if (activeModuleId && moduleId !== activeModuleId) {
+        navigate(`/dashboard/module/${activeModuleId}`)
+      }
+    } else if (dashboardSection && section !== dashboardSection) {
+      navigate(`/dashboard/${dashboardSection}`)
+    }
+  }, [dashboardSection, activeModuleId, navigate, section, moduleId])
 
   if (!fearType) return <Navigate to="/start" replace />
   return <PersonalizedDashboard />

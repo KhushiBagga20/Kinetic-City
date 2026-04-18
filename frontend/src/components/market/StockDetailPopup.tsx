@@ -14,18 +14,18 @@ const KINU_INSIGHTS: Record<string, string> = {
   RELIANCE: 'Reliance Industries has the single highest weight in Nifty 50. Its movement significantly affects your index fund.',
   HDFCBANK: 'HDFC Bank is the largest private bank in India by assets. Banking sector strength directly affects this.',
   INFY: 'Infosys is a bellwether for IT sector health. When the US tech sector slows, Infosys often feels it first.',
-  TCS: 'TCS is India's largest IT company by market cap. It is a defensive large-cap with steady dividend payouts.',
-  ICICIBANK: 'ICICI Bank has transformed from an NPA-heavy lender to one of India's most efficient private banks.',
+  TCS: "TCS is India's largest IT company by market cap. It is a defensive large-cap with steady dividend payouts.",
+  ICICIBANK: "ICICI Bank has transformed from an NPA-heavy lender to one of India's most efficient private banks.",
   BHARTIARTL: 'Bharti Airtel is a quasi-monopoly with pricing power. Telecom is a rare defensive growth sector in India.',
   ITC: 'ITC is the highest-dividend-yield Nifty stock. Its FMCG pivot is the key story to watch.',
-  SBIN: 'SBI is India's largest bank by assets. Government ownership means implicit sovereign backing.',
+  SBIN: "SBI is India's largest bank by assets. Government ownership means implicit sovereign backing.",
   KOTAKBANK: 'Kotak Mahindra Bank is known for conservative lending. Lower growth but very high asset quality.',
-  LT: 'L&T is India's largest infrastructure company. Its order book is a proxy for India's capex cycle.',
+  LT: "L&T is India's largest infrastructure company. Its order book is a proxy for India's capex cycle.",
   AXISBANK: 'Axis Bank has shown strong retail loan growth. It is the third-largest private bank in India.',
   TATAMOTORS: 'Tata Motors is a volatile stock driven by JLR profitability. High beta — amplifies market moves.',
   WIPRO: 'Wipro is an IT mid-tier. It tends to underperform TCS and Infosys but benefits from the same IT cycle.',
   HCLTECH: 'HCL Tech is strong in infrastructure management services. Less impacted by discretionary IT spend cuts.',
-  BAJFINANCE: 'Bajaj Finance is India's largest NBFC. Its stock is a high-beta proxy for Indian consumer credit growth.',
+  BAJFINANCE: "Bajaj Finance is India's largest NBFC. Its stock is a high-beta proxy for Indian consumer credit growth.",
 }
 
 /* ── Simulated data generation (deterministic per symbol) ────────────────── */

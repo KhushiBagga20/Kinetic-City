@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
 import { getNiftyFromYear } from '../../../lib/niftyData'
-import { postInstinctDebrief } from '../../../lib/api'
+import { generateInstinctDebrief } from '../../../lib/simulateAI'
 import { CRASH_HISTORY, type CrashEvent } from '../../../lib/crashData'
 import {
   ArrowRight, Clock, TrendingDown, TrendingUp,
@@ -809,7 +809,7 @@ function InstinctDebrief({ startYear, monthlyAmount, finalValue, totalInvested, 
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    postInstinctDebrief({
+    generateInstinctDebrief({
       start_year: startYear,
       monthly_amount: monthlyAmount,
       did_withdraw: didWithdraw,

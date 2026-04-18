@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
-import { postFearQuote } from '../../../lib/api'
+import { generateFearQuote } from '../../../lib/kinuAI'
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export default function FearQuote({ context = 'dashboard', variant = 'inline', c
     if (hasFetched.current) return
     hasFetched.current = true
 
-    postFearQuote({ fear_type: fearType, user_name: userName, context })
+    generateFearQuote({ fear_type: fearType, user_name: userName, context })
       .then(res => {
         if (res.quote && res.quote.length > 10) {
           setQuote(res.quote)

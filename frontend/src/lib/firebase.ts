@@ -1,0 +1,33 @@
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
+// The app will check if the API key exists. If not, it safely falls back to local storage.
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+};
+
+// Check if Firebase is properly configured
+export const isFirebaseConfigured = !!firebaseConfig.apiKey;
+
+// Initialize Firebase only if we have keys (prevents crashes)
+export const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+export const auth = isFirebaseConfigured ? getAuth(app!) : null;
+export const db = isFirebaseConfigured ? getFirestore(app!) : null;
+
+// Initialize Vertex AI dynamically to avoid Vite SSR/build issues if module is absent
+export const getVertexClient = async () => {
+  if (!isFirebaseConfigured || !app) return null;
+  try {
+    const { getAI, GoogleAIBackend } = await import('firebase/ai');
+    return getAI(app, { backend: new GoogleAIBackend() });
+  } catch (err) {
+    console.warn("AI module not found or failed to initialize:", err);
+    return null;
+  }
+};

@@ -2,12 +2,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
-import { postHarvestDebrief } from '../../../lib/api'
+import { generateHarvestDebrief } from '../../../lib/simulateAI'
 import {
-  FY_ANNUAL_RETURNS, getFYHumanLabel, getAllFYKeys,
-  simulateFY, hasCryptoData, CRYPTO_RETURNS,
+  simulateFY,
 } from '../../../lib/sandboxData'
-import { Play, Pause, ChevronRight, Zap, RotateCcw, TrendingUp, TrendingDown, Sprout, Leaf, TreeDeciduous } from 'lucide-react'
+import { Play, Pause, ChevronRight, Zap, RotateCcw, Sprout, Leaf, TreeDeciduous } from 'lucide-react'
 
 // ── Types & Data ────────────────────────────────────────────────────────────
 
@@ -67,8 +66,6 @@ export default function HarvestRoom() {
   const [currentMonth, setCurrentMonth] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const [portfolioHistory, setPortfolioHistory] = useState<number[]>([])
-  const [currentValues, setCurrentValues] = useState({ nifty: 0, midcap: 0, smallcap: 0, debt: 0 })
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Report state
@@ -76,7 +73,6 @@ export default function HarvestRoom() {
   const [insightsLoading, setInsightsLoading] = useState(false)
 
   const totalAlloc = alloc.nifty + alloc.midcap + alloc.smallcap + alloc.debt
-  const remaining = 100 - totalAlloc
 
   // ── Simulation logic ──────────────────────────────────────────────────
 
@@ -174,7 +170,7 @@ export default function HarvestRoom() {
   useEffect(() => {
     if (phase !== 'report') return
     setInsightsLoading(true)
-    postHarvestDebrief({
+    generateHarvestDebrief({
       era: selectedEra.label,
       era_years: selectedEra.fyKeys.length,
       budget,

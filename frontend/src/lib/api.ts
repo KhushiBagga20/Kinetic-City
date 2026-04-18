@@ -102,59 +102,9 @@ export async function postSignIn(data: {
   return post('/api/signin', data)
 }
 
-export async function postSandboxDebrief(data: {
-  year: string
-  allocation: { nifty: number; midcap: number; smallcap: number; debt: number }
-  final_values: { nifty: number; midcap: number; smallcap: number; debt: number }
-  did_pull_out: boolean
-  pulled_out_month?: number | null
-  fear_type: string
-}): Promise<{ debrief: string }> {
-  return post('/api/sandbox-debrief', data)
-}
-
-export async function postInstinctDebrief(data: {
-  start_year: number
-  monthly_amount: number
-  did_withdraw: boolean
-  withdraw_month?: number | null
-  fear_type: string
-  final_value: number
-  total_invested: number
-}): Promise<{ debrief: string }> {
-  return post('/api/instinct-debrief', data)
-}
-
-export async function postSandboxAdvice(data: {
-  year: string
-  user_allocation: { nifty: number; midcap: number; smallcap: number; debt: number }
-  optimal_allocation: { nifty: number; midcap: number; smallcap: number; debt: number }
-  user_result: number
-  optimal_result: number
-  total_invested: number
-  fear_type: string
-  did_pull_out: boolean
-}): Promise<{ advice: string }> {
-  return post('/api/sandbox-advice', data)
-}
-
-export async function postHarvestDebrief(data: {
-  era: string
-  era_years: number
-  budget: number
-  style: string
-  allocation: Record<string, number>
-  final_value: number
-  total_invested: number
-  fear_type: string
-}): Promise<{ insights: string }> {
-  return post('/api/harvest-debrief', data)
-}
-
-export async function postFearQuote(data: {
-  fear_type: string
-  user_name?: string
-  context?: string
-}): Promise<{ quote: string }> {
-  return post('/api/fear-quote', data)
+export async function postActivateSIP(data: {
+  amount: number
+  frequency: string
+}): Promise<{ success: boolean; message: string }> {
+  return post('/api/portfolio/sip/activate', data)
 }

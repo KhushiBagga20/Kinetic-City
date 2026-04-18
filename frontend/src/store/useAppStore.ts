@@ -8,6 +8,10 @@ import {
   type MetricItem,
   type HoldingsData,
 } from '../lib/api'
+import { auth, db, isFirebaseConfigured } from '../lib/firebase'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { onAuthStateChanged } from 'firebase/auth'
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -493,3 +497,75 @@ export const useAppStore = create<AppState>()(
     }
   )
 )
+
+
+// ── Firebase Sync Sync ───────────────────────────────────────────────────────
+if (isFirebaseConfigured && auth && db) {
+  // 1. Listen to Auth changes to hydrate local state from remote
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User logged in — fetch their document
+      const docRef = doc(db, 'users', user.uid)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        // Hydrate the store with remote data (merging over defaults)
+        useAppStore.setState({
+          isAuthenticated: true,
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: data.userName || '',
+          fearType: data.fearType || null,
+          metaphorStyle: data.metaphorStyle || null,
+          portfolioSetup: data.portfolioSetup || false,
+          fearProgress: data.fearProgress || 0,
+          completedModules: data.completedModules || [],
+          streakDays: data.streakDays || 0,
+          cryptoEnabled: data.cryptoEnabled || false
+        })
+      } else {
+        // First login, they have no doc yet (handled in SignUp)
+        useAppStore.setState({ isAuthenticated: true, userId: user.uid, userEmail: user.email || '' })
+      }
+    } else {
+      // User logged out
+      useAppStore.getState().reset()
+      useAppStore.setState({ isAuthenticated: false, userId: '', userEmail: '' })
+    }
+  })
+
+  // 2. Subscribe to Zustand changes and sync vital fields up to Firestore
+  useAppStore.subscribe((state, prevState) => {
+    // Only sync if authenticated
+    if (!state.isAuthenticated || !state.userId) return;
+
+    // We don't want to sync constantly on every single keystroke.
+    // Check if critical fields actually changed:
+    const criticalFieldsChanged = 
+      state.fearType !== prevState.fearType ||
+      state.metaphorStyle !== prevState.metaphorStyle ||
+      state.portfolioSetup !== prevState.portfolioSetup ||
+      state.fearProgress !== prevState.fearProgress ||
+      state.completedModules.length !== prevState.completedModules.length ||
+      state.streakDays !== prevState.streakDays ||
+      state.cryptoEnabled !== prevState.cryptoEnabled;
+
+    if (criticalFieldsChanged) {
+      const docRef = doc(db, 'users', state.userId)
+      // Non-blocking fire-and-forget sync
+      setDoc(docRef, {
+        fearType: state.fearType,
+        metaphorStyle: state.metaphorStyle,
+        portfolioSetup: state.portfolioSetup,
+        fearProgress: state.fearProgress,
+        completedModules: state.completedModules,
+        streakDays: state.streakDays,
+        cryptoEnabled: state.cryptoEnabled,
+        userName: state.userName,
+        lastSync: new Date().toISOString()
+      }, { merge: true }).catch(err => {
+        console.error('Failed to sync state to Firebase:', err)
+      })
+    }
+  })
+}
