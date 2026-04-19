@@ -94,7 +94,8 @@ export default function FearQuote({ context = 'dashboard', variant = 'inline', c
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className={`rounded-2xl p-5 border relative overflow-hidden ${className}`}
+        whileHover={{ scale: 1.02, boxShadow: `0 8px 32px ${color}15`, borderColor: `${color}30` }}
+        className={`rounded-2xl p-5 border relative overflow-hidden transition-all duration-300 ${className}`}
         style={{
           background: 'var(--surface)',
           borderColor: `${color}18`,

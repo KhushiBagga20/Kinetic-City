@@ -21,9 +21,10 @@ import ModuleJourney from './pages/ModuleJourney'
 import Roadmap3DPage from './pages/Roadmap3DPage'
 import { setPageTitle } from '../../lib/pageTitles'
 import { getTrackForFear } from '../../lib/curriculumData'
+import DotGrid from '../shared/DotGrid'
 import {
   LineChart, Clock, ChevronDown, ChevronRight, X, User,
-  LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check,
+  LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check, Settings,
 } from 'lucide-react'
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
@@ -141,6 +142,7 @@ export default function PersonalizedDashboard() {
       case 'kinu':        return <KinuPage key="kinu" />
       case 'my-card':     return <MyCardPage key="my-card" />
       case 'profile':     return <ProfilePage key="profile" />
+      case 'settings':    return <ProfilePage key="settings" />
       case 'module-reader': return <ModuleJourney key="module-reader" />
       case 'roadmap':     return <Roadmap3DPage key="roadmap" />
       default:            return <DashboardHome key="home" />
@@ -152,7 +154,8 @@ export default function PersonalizedDashboard() {
   const initial = (displayName || 'K').charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen relative" style={{ background: 'var(--bg)' }}>
+      <DotGrid />
 
       {/* ══════════════════════════════════════════════════════════════════
           NAVBAR — Fixed, 60px, full width
@@ -370,6 +373,8 @@ export default function PersonalizedDashboard() {
                         label="My Fear Profile" onClick={() => nav('fear-profile')} />
                       <ProfileRow icon={<CreditCard className="w-[14px] h-[14px]" style={{ color: 'var(--text-secondary)' }} />}
                         label="My Kinetic Card" onClick={() => nav('my-card')} />
+                      <ProfileRow icon={<Settings className="w-[14px] h-[14px]" style={{ color: 'var(--text-secondary)' }} />}
+                        label="Settings" onClick={() => nav('settings')} />
                     </div>
 
                     <Divider />
@@ -522,7 +527,7 @@ export default function PersonalizedDashboard() {
       {/* ══════════════════════════════════════════════════════════════════
           MAIN CONTENT — padding-top: 60px for fixed navbar
           ══════════════════════════════════════════════════════════════════ */}
-      <main className="pb-8 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
+      <main className="relative z-[1] pb-8 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
         <div className="max-w-[1200px] mx-auto py-8">
           <AnimatePresence mode="wait">
             {renderSection()}

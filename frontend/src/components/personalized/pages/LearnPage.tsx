@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 
 import { Check, ChevronDown, ChevronRight, Search, BookOpen, Map, Zap, Shield, Target } from 'lucide-react'
-import FYComparison from '../FYComparison'
-import CopyTheMarket from '../CopyTheMarket'
 import XIRRExplainer from '../XIRRExplainer'
 import MarketExplainer from '../MarketExplainer'
 import NewsImpactCard from '../../news/NewsImpactCard'
@@ -139,21 +137,21 @@ export function getModulesForFear(fearType: FearType): Module[] {
 
   switch (fearType) {
     case 'loss': return [
-      { id: 'loss-1', title: 'Your Brain on Losses', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" title="The Loss Aversion Bias" stats={[{label:'Pain multiplier',value:'2.5×'},{label:'Nifty 50 CAGR',value:'14%'},{label:'Crashes recovered',value:'100%'}]} content={<div className="space-y-3"><p>You were diagnosed with <strong className="text-white">Loss Aversion</strong> — you feel the pain of a ₹1,000 loss 2.5× more intensely than the joy of a ₹1,000 gain. Kahneman and Tversky proved this in 1979.</p><p>This trait kept your ancestors alive — running from a lion is more important than chasing a deer. But in the market, every instinct to <em>flee</em> during a crash is your biology costing you a decade of wealth.</p><p>The Nifty 50 has crashed over 20% exactly six times since 2000. It has recovered to new highs every single time.</p></div>} insight="Every time you want to sell during a red day, it's chemistry, not logic. Your amygdala fires before your prefrontal cortex can calculate recovery timelines." /> },
+      { id: 'loss-1', title: 'Your Brain on Losses', readTime: '12 min', content: <VideoConcept youtubeId="HVL3wbYRXpg" title="The Loss Aversion Bias" stats={[{label:'Pain multiplier',value:'2.5×'},{label:'Nifty 50 CAGR',value:'14%'},{label:'Crashes recovered',value:'100%'}]} content={<div className="space-y-3"><p>You were diagnosed with <strong className="text-white">Loss Aversion</strong> — you feel the pain of a ₹1,000 loss 2.5× more intensely than the joy of a ₹1,000 gain. Kahneman and Tversky proved this in 1979.</p><p>This trait kept your ancestors alive — running from a lion is more important than chasing a deer. But in the market, every instinct to <em>flee</em> during a crash is your biology costing you a decade of wealth.</p><p>The Nifty 50 has crashed over 20% exactly six times since 2000. It has recovered to new highs every single time.</p></div>} insight="Every time you want to sell during a red day, it's chemistry, not logic. Your amygdala fires before your prefrontal cortex can calculate recovery timelines." /> },
       { id: 'loss-2', title: 'Every Crash in History', readTime: '6 min', content: <CrashTimeline /> },
-      { id: 'loss-3', title: 'The Market Rebound', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" title="COVID-19: The 38% Crash" stats={[{label:'Peak drop',value:'−38%'},{label:'Recovery time',value:'6 mo'},{label:'SIP investor gain',value:'+68%'}]} content={<div className="space-y-3"><p>March 2020: the Nifty 50 fell from 12,000 to 7,500 in 40 days. Every news channel declared the end of the economy.</p><p>Investors who panic-sold locked in a 38% loss permanently. Investors with a ₹5,000/month SIP bought units at the cheapest price ever recorded — then watched those units triple in 18 months.</p><p>The SIP investor didn't need to time the bottom. The automation did it for them, every single month, without emotion.</p></div>} insight="A ₹5,000/month SIP started in Jan 2020 was worth ₹10.8L by Dec 2022 — on just ₹1.8L invested." /> },
+      { id: 'loss-3', title: 'The Market Rebound', readTime: '10 min', content: <VideoConcept youtubeId="PHe0bXAIuk0" title="COVID-19: The 38% Crash" stats={[{label:'Peak drop',value:'−38%'},{label:'Recovery time',value:'6 mo'},{label:'SIP investor gain',value:'+68%'}]} content={<div className="space-y-3"><p>March 2020: the Nifty 50 fell from 12,000 to 7,500 in 40 days. Every news channel declared the end of the economy.</p><p>Investors who panic-sold locked in a 38% loss permanently. Investors with a ₹5,000/month SIP bought units at the cheapest price ever recorded — then watched those units triple in 18 months.</p><p>The SIP investor didn't need to time the bottom. The automation did it for them, every single month, without emotion.</p></div>} insight="A ₹5,000/month SIP started in Jan 2020 was worth ₹10.8L by Dec 2022 — on just ₹1.8L invested." /> },
       { id: 'loss-4', title: 'The SIP Engine', readTime: '5 min', content: <SipSimulator /> },
       { id: 'loss-5', title: 'Kinetic: Backtest the Fear', readTime: '4 min', content: <AppFeatureTour featureName="The Time Machine" explanation="Kinetic has a built-in time machine. It lets you simulate exactly what would have happened if you started investing at the absolute worst possible day in recent history. Run the 2008 crash. See what happened." steps={["Go to your Dashboard", "Tap 'Time Machine'", "Select '2008 Global Financial Crisis'", "Watch the SIP investor outperform the panic-seller by 340%"]} /> },
       { id: 'loss-6', title: 'The FD Trap', readTime: '8 min', content: <FDTrapInteractive /> },
       { id: 'loss-7', title: 'Your 10,000 Futures', readTime: '4 min', content: <AppFeatureTour featureName="Monte Carlo Fan Chart" explanation="Our AI simulates 10,000 possible futures based on historical variance — bull markets, crashes, and flat periods. The Fan Chart on your dashboard shows the 95% confidence band. Even the worst-case band shows significant profit over 15 years." steps={["Open an Active Goal on your dashboard", "Toggle 'Simulation Mode' on", "Observe the green band — your 95% worst-case", "The lowest line is still ~8× your investment at year 20"]} /> },
       { id: 'loss-8', title: 'Final Boss: Myth Buster', readTime: '4 min', content: <QuizModule questions={lossQuiz} /> },
-      { id: 'loss-9', title: 'Your Defensive Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" title="The Loss Avoider's Shield" stats={[{label:'Rule 1',value:'No panic'},{label:'Rule 2',value:'Stay SIP'},{label:'Rule 3',value:'Log out'}]} content={<div className="space-y-3"><p>Your defensive protocol is three rules: <strong className="text-white">No panic. Stay in SIP. Log out when red.</strong></p><p>When the market is bleeding, your only job is to ensure your bank account has enough balance for the SIP mandate to auto-trigger. That's it. The algorithm does the rest.</p><p>Delete market-tracking apps from your home screen. Check your portfolio quarterly, not daily. Every notification is an invitation to make a bad decision.</p></div>} insight="Studies show investors who check portfolios daily underperform those who check quarterly by 1.5% per year — purely due to emotional micro-decisions." /> },
+      { id: 'loss-9', title: 'Your Defensive Protocol', readTime: '10 min', content: <VideoConcept youtubeId="p7HKvqRI_Bo" title="The Loss Avoider's Shield" stats={[{label:'Rule 1',value:'No panic'},{label:'Rule 2',value:'Stay SIP'},{label:'Rule 3',value:'Log out'}]} content={<div className="space-y-3"><p>Your defensive protocol is three rules: <strong className="text-white">No panic. Stay in SIP. Log out when red.</strong></p><p>When the market is bleeding, your only job is to ensure your bank account has enough balance for the SIP mandate to auto-trigger. That's it. The algorithm does the rest.</p><p>Delete market-tracking apps from your home screen. Check your portfolio quarterly, not daily. Every notification is an invitation to make a bad decision.</p></div>} insight="Studies show investors who check portfolios daily underperform those who check quarterly by 1.5% per year — purely due to emotional micro-decisions." /> },
       { id: 'loss-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I understand that dips are discounts, not disasters", "I accept that 20 years of historical data beats my gut feeling", "I will never sell during a crash", "Ready to activate my ₹500 automated SIP"]} /> },
     ]
     
     // Provide structured paths for all other fears utilizing the customized prompts
     case 'scam': return [
-      { id: 'pattern-1', title: 'The Pattern of Deception', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4" title="Pattern Recognition" stats={[{label:'Indians scammed/yr',value:'₹1,000Cr+'},{label:'SEBI registered funds',value:'44 AMCs'},{label:'Scam red flags',value:'5 signs'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Pattern Detector</strong>. You saw people get burned by 12% guaranteed return schemes, and correctly pulled back. That instinct is correct.</p><p>But there is a massive difference between an unregulated Telegram bot promising fixed daily returns and the tightly regulated structure of the NSE, SEBI, and BSE Star MF clearing system.</p><p>The 5 scam red flags: ① guaranteed returns ② unlisted / unregistered ③ pressure to act fast ④ multi-level referrals ⑤ no withdrawal option.</p></div>} insight="Skepticism is your superpower. We will use it to verify the truth rather than avoid it." /> },
+      { id: 'pattern-1', title: 'The Pattern of Deception', readTime: '12 min', content: <VideoConcept youtubeId="dQw4w9WgXcQ" title="Pattern Recognition" stats={[{label:'Indians scammed/yr',value:'₹1,000Cr+'},{label:'SEBI registered funds',value:'44 AMCs'},{label:'Scam red flags',value:'5 signs'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Pattern Detector</strong>. You saw people get burned by 12% guaranteed return schemes, and correctly pulled back. That instinct is correct.</p><p>But there is a massive difference between an unregulated Telegram bot promising fixed daily returns and the tightly regulated structure of the NSE, SEBI, and BSE Star MF clearing system.</p><p>The 5 scam red flags: ① guaranteed returns ② unlisted / unregistered ③ pressure to act fast ④ multi-level referrals ⑤ no withdrawal option.</p></div>} insight="Skepticism is your superpower. We will use it to verify the truth rather than avoid it." /> },
       { id: 'pattern-2', title: 'The SEBI Shield', readTime: '6 min', content: <SebiProtection /> },
       { id: 'pattern-3', title: 'Where Your Money Actually Goes', readTime: '5 min', content: <MoneyFlow /> },
       { id: 'pattern-4', title: 'The Scam-Proof Checklist', readTime: '4 min', content: <DueDiligenceChecklist /> },
@@ -161,12 +159,12 @@ export function getModulesForFear(fearType: FearType): Module[] {
       { id: 'pattern-6', title: 'Boring Math, Extraordinary Results', readTime: '8 min', content: <FirstHundred /> },
       { id: 'pattern-7', title: 'Kinetic: The Fee X-Ray', readTime: '4 min', content: <AppFeatureTour featureName="Fee X-Ray" explanation="We hate hidden fees as much as you do. Every rupee lost to an expense ratio is shown to you clearly — across 5, 10, and 20-year compounded loss projections." steps={["Go to your holdings screen", "Tap 'Analyze Fees'", "See the full rupee cost of every middleman", "Compare vs index fund alternative"]} /> },
       { id: 'pattern-8', title: 'Final Boss: Scam Detector', readTime: '4 min', content: <QuizModule questions={patternQuiz} /> },
-      { id: 'pattern-9', title: 'Your Defensive Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" title="The Scam Detector Code" stats={[{label:'Not SEBI reg?',value:'Walk away'},{label:'Guaranteed %?',value:'Run'},{label:'Feels urgent?',value:'Its a scam'}]} content={<div className="space-y-3"><p>Your three-word defense: <strong className="text-white">Verify. Then verify again.</strong></p><p>If it is not SEBI registered it does not exist. If it guarantees a fixed return it is either lying or illegal. If someone is pressuring you to invest fast that is a manipulation tactic designed to bypass your pattern detection.</p><p>The boring index fund needs no urgency, no exclusivity, no Telegram group. It is open, public, and available tomorrow too.</p></div>} insight={"The best investment opportunity never needs you to act immediately. Real compounding rewards patience, not speed."} /> },
+      { id: 'pattern-9', title: 'Your Defensive Protocol', readTime: '10 min', content: <VideoConcept youtubeId="Tt2JBo6xyns" title="The Scam Detector Code" stats={[{label:'Not SEBI reg?',value:'Walk away'},{label:'Guaranteed %?',value:'Run'},{label:'Feels urgent?',value:'Its a scam'}]} content={<div className="space-y-3"><p>Your three-word defense: <strong className="text-white">Verify. Then verify again.</strong></p><p>If it is not SEBI registered it does not exist. If it guarantees a fixed return it is either lying or illegal. If someone is pressuring you to invest fast that is a manipulation tactic designed to bypass your pattern detection.</p><p>The boring index fund needs no urgency, no exclusivity, no Telegram group. It is open, public, and available tomorrow too.</p></div>} insight={"The best investment opportunity never needs you to act immediately. Real compounding rewards patience, not speed."} /> },
       { id: 'pattern-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I can check SEBI registration at amfiindia.com", "I will never invest in anything with guaranteed returns", "I understand that true wealth is boring and slow", "Ready to activate my verified SIP"]} /> },
     ]
 
     case 'trust': return [
-      { id: 'trust-1', title: 'The Human Failure', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" title="Independence Guardian" stats={[{label:'Active funds beat index',value:'16%'},{label:'Extra fees charged',value:'1.9%/yr'},{label:'20yr wealth gap',value:'5.7x'}]} content={<div className="space-y-3"><p>You were diagnosed as an <strong className="text-white">Independence Guardian</strong>. You distrust giving your money to a third-party manager. Your instinct is statistically correct.</p><p>84% of actively managed funds underperform the Nifty 50 Index over a 10-year period. The remaining 16% that do beat it rarely do so consistently in the next decade.</p><p>Worse: they charge you 1.5 to 2.5% per year for this underperformance. On 10L over 20 years, that fee compounded costs you 57L in lost returns.</p></div>} insight={"Trusting a human with your money is not just philosophically wrong — it is mathematically catastrophic over time."} /> },
+      { id: 'trust-1', title: 'The Human Failure', readTime: '12 min', content: <VideoConcept youtubeId="fwe-PjrX23o" title="Independence Guardian" stats={[{label:'Active funds beat index',value:'16%'},{label:'Extra fees charged',value:'1.9%/yr'},{label:'20yr wealth gap',value:'5.7x'}]} content={<div className="space-y-3"><p>You were diagnosed as an <strong className="text-white">Independence Guardian</strong>. You distrust giving your money to a third-party manager. Your instinct is statistically correct.</p><p>84% of actively managed funds underperform the Nifty 50 Index over a 10-year period. The remaining 16% that do beat it rarely do so consistently in the next decade.</p><p>Worse: they charge you 1.5 to 2.5% per year for this underperformance. On 10L over 20 years, that fee compounded costs you 57L in lost returns.</p></div>} insight={"Trusting a human with your money is not just philosophically wrong — it is mathematically catastrophic over time."} /> },
       { id: 'trust-2', title: 'The Autonomous Index', readTime: '6 min', content: <IndexFundExplainer /> },
       { id: 'trust-3', title: 'Active vs Passive: 20-Year Race', readTime: '5 min', content: <ActiveVsPassive /> },
       { id: 'trust-4', title: 'Kinetic: Zero-Touch Mode', readTime: '4 min', content: <AppFeatureTour featureName="Zero-Touch Automation" explanation="Kinetic is built for people who want zero human middlemen. You set the rules once. A UPI mandate executes directly with BSE Star MF — bypassing every human touchpoint. No agent. No advisor. No hidden commissions." steps={["Link your bank via a direct UPI mandate", "Set your index fund and monthly amount", "Kinetic authorizes directly with BSE Star MF clearing", "No humans touch your money — ever"]} /> },
@@ -174,20 +172,20 @@ export function getModulesForFear(fearType: FearType): Module[] {
       { id: 'trust-6', title: "Buy India's GDP", readTime: '8 min', content: <IndiaGrowth /> },
       { id: 'trust-7', title: 'Kinetic: Prove It Yourself', readTime: '4 min', content: <AppFeatureTour featureName="The Time Machine" explanation="Don't take our word for it. Run the historical backtest yourself. Select any passive index fund, set any 15-year window, and compare it against the average active fund from the same period." steps={["Select 'Time Machine' from the dashboard", "Choose 'Nifty 50 Index Fund (Passive)'", "Compare vs 'Large Cap Active Funds (Avg)'", "See the compound difference for yourself"]} /> },
       { id: 'trust-8', title: 'Final Boss: Independence Test', readTime: '4 min', content: <QuizModule questions={trustQuiz} /> },
-      { id: 'trust-9', title: 'Your Autonomous Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" title="The Algorithm Manifesto" stats={[{label:'Human fund managers',value:'Avoid'},{label:'Index algorithms',value:'Trust'},{label:'Fee threshold',value:'≤0.5%'}]} content={<div className="space-y-3"><p>Your investment strategy in one line: <strong className="text-white">Buy the index. Pay minimum fees. Never talk to an agent.</strong></p><p>The Nifty 50 index rebalances quarterly. It automatically kicks out companies that weaken and adds those that strengthen — with zero emotion, zero bias, zero commissions.</p><p>Every rupee you save in fees is a rupee that compounds at 14% for 20 years. A 1% fee saved on ₹5L is ₹19L by retirement.</p></div>} insight="Algorithms don't have bad days. They don't take commissions. They don't panic. They are objectively more trustworthy than any human portfolio manager." /> },
+      { id: 'trust-9', title: 'Your Autonomous Protocol', readTime: '10 min', content: <VideoConcept youtubeId="Ll3TCEz4g1k" title="The Algorithm Manifesto" stats={[{label:'Human fund managers',value:'Avoid'},{label:'Index algorithms',value:'Trust'},{label:'Fee threshold',value:'≤0.5%'}]} content={<div className="space-y-3"><p>Your investment strategy in one line: <strong className="text-white">Buy the index. Pay minimum fees. Never talk to an agent.</strong></p><p>The Nifty 50 index rebalances quarterly. It automatically kicks out companies that weaken and adds those that strengthen — with zero emotion, zero bias, zero commissions.</p><p>Every rupee you save in fees is a rupee that compounds at 14% for 20 years. A 1% fee saved on ₹5L is ₹19L by retirement.</p></div>} insight="Algorithms don't have bad days. They don't take commissions. They don't panic. They are objectively more trustworthy than any human portfolio manager." /> },
       { id: 'trust-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I will never pay more than 0.5% expense ratio", "I only invest in direct growth plan index funds", "I have deleted my broker's number", "Ready to activate my fully autonomous ₹500 SIP"]} /> },
     ]
 
     case 'jargon': return [
-      { id: 'clarity-1', title: 'The Illusion of Complexity', readTime: '5 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" title="Clarity Seeker" stats={[{label:'Words you actually need',value:'2'},{label:'Finance jargon terms',value:'300+'},{label:'Nifty 50 avg return',value:'14%'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Clarity Seeker</strong>. The industry throws 'Alpha', 'Beta', 'XIRR', 'Sharpe Ratio', and 'Arbitrage' at you — and you froze.</p><p>That was intentional. Complex language creates dependency on "experts" who charge you for decoding it. The dirty secret: you need exactly two concepts to build life-changing wealth.</p><p><strong className="text-white">1. Index Fund.</strong> <strong className="text-white">2. SIP.</strong> Everything else is noise designed to extract your money.</p></div>} insight="Every extra word of jargon between you and investing is money that didn't compound for another year." /> },
-      { id: 'clarity-2', title: 'Only 2 Words Matter', readTime: '6 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" title="The 2-Word Formula" stats={[{label:'Word 1',value:'Index Fund'},{label:'Word 2',value:'SIP'},{label:'Everything else',value:'Ignore'}]} content={<div className="space-y-4"><p><strong className="text-white">Index Fund:</strong> A basket that automatically owns the top 50 biggest companies in India. No human picks. No emotions. Pure market ownership.</p><p><strong className="text-white">SIP (Systematic Investment Plan):</strong> Buying a tiny, fixed piece of that basket every single month automatically — like a subscription, but you get back multi-fold.</p><p>That combination, started at ₹500/month, has turned into lakhs for ordinary Indians over 15 years. No MBA required.</p></div>} insight="Warren Buffett — the world's greatest investor — recommends index funds for 99% of people. That includes you." /> },
+      { id: 'clarity-1', title: 'The Illusion of Complexity', readTime: '12 min', content: <VideoConcept youtubeId="rJjKP8vYjpQ" title="Clarity Seeker" stats={[{label:'Words you actually need',value:'2'},{label:'Finance jargon terms',value:'300+'},{label:'Nifty 50 avg return',value:'14%'}]} content={<div className="space-y-3"><p>You were diagnosed as a <strong className="text-white">Clarity Seeker</strong>. The industry throws 'Alpha', 'Beta', 'XIRR', 'Sharpe Ratio', and 'Arbitrage' at you — and you froze.</p><p>That was intentional. Complex language creates dependency on "experts" who charge you for decoding it. The dirty secret: you need exactly two concepts to build life-changing wealth.</p><p><strong className="text-white">1. Index Fund.</strong> <strong className="text-white">2. SIP.</strong> Everything else is noise designed to extract your money.</p></div>} insight="Every extra word of jargon between you and investing is money that didn't compound for another year." /> },
+      { id: 'clarity-2', title: 'Only 2 Words Matter', readTime: '10 min', content: <VideoConcept youtubeId="SzlzN-OjMPw" title="The 2-Word Formula" stats={[{label:'Word 1',value:'Index Fund'},{label:'Word 2',value:'SIP'},{label:'Everything else',value:'Ignore'}]} content={<div className="space-y-4"><p><strong className="text-white">Index Fund:</strong> A basket that automatically owns the top 50 biggest companies in India. No human picks. No emotions. Pure market ownership.</p><p><strong className="text-white">SIP (Systematic Investment Plan):</strong> Buying a tiny, fixed piece of that basket every single month automatically — like a subscription, but you get back multi-fold.</p><p>That combination, started at ₹500/month, has turned into lakhs for ordinary Indians over 15 years. No MBA required.</p></div>} insight="Warren Buffett — the world's greatest investor — recommends index funds for 99% of people. That includes you." /> },
       { id: 'clarity-3', title: 'How Your ₹500 SIP Actually Works', readTime: '5 min', content: <SipExplainer /> },
       { id: 'clarity-4', title: 'The Power of ₹100/Month', readTime: '8 min', content: <FirstHundred /> },
       { id: 'clarity-5', title: 'Kinetic: Jargon-Free Mode', readTime: '4 min', content: <AppFeatureTour featureName="KINU AI Mentor" explanation="KINU is programmed to never use financial jargon. Ask him anything and he'll explain it with analogies from cricket, chai, or Bollywood. He's the anti-broker — designed to demystify, not confuse." steps={["Tap the green 'K' bubble anywhere in the app", "Ask 'What is NAV?' or 'What is XIRR?'", "Get an explanation using pizza, cricket, or chai analogies", "Ask follow-ups until it's crystal clear"]} /> },
       { id: 'clarity-6', title: 'Reading a Fund Sheet: 3 Numbers', readTime: '8 min', content: <FundFactSheet /> },
       { id: 'clarity-7', title: 'Kinetic: Your Clean Dashboard', readTime: '4 min', content: <AppFeatureTour featureName="The Clean Dashboard" explanation="Your dashboard shows exactly three things: what you put in, what it grew to, and when you'll hit your goal. No red-green ticker chaos. No confusing percentages. Just your money, growing." steps={["Open your Dashboard", "See the Net Worth growth circle", "Check your 'Goal Timeline' — one number, one date", "That's all you need to know"]} /> },
       { id: 'clarity-8', title: 'Final Boss: Jargon Buster', readTime: '4 min', content: <QuizModule questions={jargonQuiz} /> },
-      { id: 'clarity-9', title: 'Your Clarity Protocol', readTime: '3 min', content: <VideoConcept videoSrc="https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" title="The Clarity Manifesto" stats={[{label:'Decision rule',value:'1 sentence'},{label:'Funds needed',value:'1 index'},{label:'Action needed',value:'1 SIP'}]} content={<div className="space-y-3"><p>Your rule for life: <strong className="text-white">If you can't explain it in one sentence, don't invest in it.</strong></p><p>"I invest ₹500/month into a Nifty 50 Index Fund via SIP." That is a complete, valid, world-class investment strategy. Nothing more needed.</p><p>Anyone who tells you otherwise is selling you something — either a product with high fees, or their own sense of superiority.</p></div>} insight="The most profitable investors are often the ones who do the least — because they resisted the urge to complicate a simple system." /> },
+      { id: 'clarity-9', title: 'Your Clarity Protocol', readTime: '10 min', content: <VideoConcept youtubeId="Xn7KWR9EOGQ" title="The Clarity Manifesto" stats={[{label:'Decision rule',value:'1 sentence'},{label:'Funds needed',value:'1 index'},{label:'Action needed',value:'1 SIP'}]} content={<div className="space-y-3"><p>Your rule for life: <strong className="text-white">If you can't explain it in one sentence, don't invest in it.</strong></p><p>"I invest ₹500/month into a Nifty 50 Index Fund via SIP." That is a complete, valid, world-class investment strategy. Nothing more needed.</p><p>Anyone who tells you otherwise is selling you something — either a product with high fees, or their own sense of superiority.</p></div>} insight="The most profitable investors are often the ones who do the least — because they resisted the urge to complicate a simple system." /> },
       { id: 'clarity-10', title: 'The Initiation', readTime: '2 min', content: <ChecklistModule items={["I will ignore all financial jargon on TV and YouTube", "I know Index Fund + SIP is all I need", "I can explain my entire investment strategy in one sentence", "Ready to activate my ₹500 monthly SIP"]} /> },
     ]
   }
@@ -464,17 +462,113 @@ export default function LearnPage() {
         )}
 
         {/* ── MODULES TAB ──────────────────────────────────────────────── */}
-        {activeTab === 'modules' && (
-          <motion.div key="modules" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+        {activeTab === 'modules' && (() => {
+          const trackModules = getModulesForFear(fearType)
+          const completed = completedModules || []
+          const completedCount = trackModules.filter(m => completed.includes(m.id)).length
+          const pct = Math.round((completedCount / trackModules.length) * 100)
 
-            {/* FY Comparison Card */}
-            <FYComparison />
+          return (
+            <motion.div key="modules" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
 
-            {/* Copy the Market */}
-            <CopyTheMarket />
+              {/* Progress header */}
+              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-display font-semibold text-white text-base">{trackName} Track</p>
+                    <p className="font-sans text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      {completedCount} of {trackModules.length} modules completed
+                    </p>
+                  </div>
+                  <p className="font-mono text-2xl font-black" style={{ color: pct === 100 ? '#1D9E75' : 'var(--accent)' }}>{pct}%</p>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    className="h-full rounded-full"
+                    style={{ background: pct === 100 ? '#1D9E75' : 'var(--accent)' }}
+                  />
+                </div>
+              </div>
 
-          </motion.div>
-        )}
+              {/* Module cards */}
+              <div className="space-y-3">
+                {trackModules.map((mod, i) => {
+                  const isDone = completed.includes(mod.id)
+                  const isNext = !isDone && completed.length === i
+                  return (
+                    <motion.button
+                      key={mod.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.3 }}
+                      onClick={() => {
+                        useAppStore.getState().setActiveModuleId(mod.id)
+                        navigate(`/dashboard/module/${mod.id}`)
+                      }}
+                      className="w-full text-left rounded-2xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 group"
+                      style={{
+                        background: isDone
+                          ? 'rgba(29,158,117,0.06)'
+                          : isNext
+                          ? 'rgba(192,241,142,0.05)'
+                          : 'var(--surface)',
+                        border: `1px solid ${isDone ? 'rgba(29,158,117,0.2)' : isNext ? 'rgba(192,241,142,0.15)' : 'var(--border)'}`,
+                      }}
+                      onMouseEnter={e => {
+                        if (!isDone) e.currentTarget.style.borderColor = 'rgba(192,241,142,0.25)'
+                        e.currentTarget.style.transform = 'translateX(2px)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = isDone ? 'rgba(29,158,117,0.2)' : isNext ? 'rgba(192,241,142,0.15)' : 'var(--border)'
+                        e.currentTarget.style.transform = 'none'
+                      }}
+                    >
+                      {/* Number / check */}
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-mono font-bold text-sm"
+                        style={{
+                          background: isDone ? 'rgba(29,158,117,0.15)' : isNext ? 'rgba(192,241,142,0.1)' : 'rgba(255,255,255,0.04)',
+                          color: isDone ? '#1D9E75' : isNext ? '#c0f18e' : 'rgba(255,255,255,0.3)',
+                          border: `1px solid ${isDone ? 'rgba(29,158,117,0.3)' : isNext ? 'rgba(192,241,142,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                        }}>
+                        {isDone ? <Check className="w-4 h-4" /> : i + 1}
+                      </div>
+
+                      {/* Title + meta */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-sans font-medium text-sm truncate"
+                          style={{ color: isDone ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.9)' }}>
+                          {mod.title}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="font-sans text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                            {mod.readTime}
+                          </span>
+                          {isNext && (
+                            <span className="font-mono text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider"
+                              style={{ background: 'rgba(192,241,142,0.08)', color: '#c0f18e', border: '1px solid rgba(192,241,142,0.15)' }}>
+                              Up Next
+                            </span>
+                          )}
+                          {isDone && (
+                            <span className="font-sans text-[10px]" style={{ color: '#1D9E75' }}>Completed</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <ChevronRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+                        style={{ color: isDone ? 'rgba(29,158,117,0.5)' : 'rgba(255,255,255,0.15)' }} />
+                    </motion.button>
+                  )
+                })}
+              </div>
+
+            </motion.div>
+          )
+        })()}
       </AnimatePresence>
     </motion.div>
   )

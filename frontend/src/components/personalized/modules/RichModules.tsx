@@ -1,90 +1,180 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
-import { Brain, TrendingDown, TrendingUp, ChevronRight, Star, ShieldCheck, Check, Loader2, Zap } from 'lucide-react'
+import { Brain, TrendingDown, TrendingUp, ChevronRight, ChevronDown, Star, ShieldCheck, Check, Loader2, Zap, Play, BookOpen } from 'lucide-react'
 import { postActivateSIP } from '../../../lib/api'
+
+// ── YouTube Embed ───────────────────────────────────────────────────────────
+
+export function YoutubeEmbed({ videoId, title }: { videoId: string; title?: string }) {
+  const [playing, setPlaying] = useState(false)
+  return (
+    <div className="space-y-2">
+      <div className="w-full rounded-2xl overflow-hidden relative border border-white/10 shadow-2xl" style={{ aspectRatio: '16/9' }}>
+        {!playing ? (
+          <button onClick={() => setPlaying(true)} className="absolute inset-0 z-10 flex items-center justify-center group cursor-pointer">
+            <img src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} alt={title || 'Video'} className="absolute inset-0 w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` }} />
+            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+            <div className="relative w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+              <Play className="w-7 h-7 text-white ml-1" fill="white" />
+            </div>
+          </button>
+        ) : (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+            title={title || 'Video'} allow="autoplay; encrypted-media" allowFullScreen
+            className="absolute inset-0 w-full h-full border-0"
+          />
+        )}
+      </div>
+      {title && <p className="font-sans text-xs text-white/30 text-center">{title}</p>}
+    </div>
+  )
+}
+
+// ── Expandable Section ──────────────────────────────────────────────────────
+
+export function ExpandableSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', borderColor: open ? 'rgba(192,241,142,0.15)' : 'rgba(255,255,255,0.06)' }}>
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left">
+        <span className="font-sans text-sm font-medium text-white/80">{title}</span>
+        <ChevronDown className={`w-4 h-4 text-white/30 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="px-4 pb-4 font-sans text-sm text-white/65 leading-[1.85] space-y-3">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── Key Takeaway ────────────────────────────────────────────────────────────
+
+export function KeyTakeaway({ children, icon }: { children: React.ReactNode; icon?: string }) {
+  return (
+    <div className="rounded-2xl p-5 flex gap-3 items-start" style={{ background: 'rgba(192,241,142,0.05)', border: '1px solid rgba(192,241,142,0.15)' }}>
+      <span className="text-xl shrink-0">{icon || '💡'}</span>
+      <div className="font-sans text-sm text-white/80 leading-[1.8]">{children}</div>
+    </div>
+  )
+}
+
+// ── Story Block ─────────────────────────────────────────────────────────────
+
+export function StoryBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl p-5 border-l-[3px]" style={{ background: 'rgba(55,138,221,0.04)', borderColor: '#378ADD' }}>
+      <p className="font-mono text-[10px] text-[#378ADD] uppercase tracking-[0.2em] mb-2">Real Story</p>
+      <p className="font-display text-base font-semibold text-white mb-3">{title}</p>
+      <div className="font-sans text-sm text-white/65 leading-[1.85] space-y-3">{children}</div>
+    </div>
+  )
+}
+
+// ── Comparison Table ────────────────────────────────────────────────────────
+
+export function ComparisonTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
+  return (
+    <div className="rounded-2xl overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <table className="w-full text-sm">
+        <thead>
+          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+            {headers.map((h, i) => <th key={i} className="px-4 py-3 text-left font-mono text-[10px] text-white/40 uppercase tracking-wider">{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              {row.map((cell, ci) => <td key={ci} className="px-4 py-3 text-xs text-white/60">{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Stat Grid ───────────────────────────────────────────────────────────────
+
+export function StatGrid({ stats }: { stats: { label: string; value: string; color?: string }[] }) {
+  return (
+    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(stats.length, 3)}, 1fr)` }}>
+      {stats.map((s, i) => (
+        <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+          className="rounded-xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <p className="font-mono text-2xl font-black" style={{ color: s.color || '#c0f18e' }}>{s.value}</p>
+          <p className="text-[9px] text-white/35 uppercase tracking-widest mt-1">{s.label}</p>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
 // ── Shared Layout Utilities ─────────────────────────────────────────────────
 
 export function VideoConcept({ 
-  title, content, insight, stats,
+  videoSrc, youtubeId, title, content, insight, stats,
   accent = '#c0f18e'
 }: { 
-  videoSrc?: string, title?: string, content: React.ReactNode, insight?: string,
+  videoSrc?: string, youtubeId?: string, title?: string, content: React.ReactNode, insight?: string,
   stats?: { label: string; value: string }[],
   accent?: string
 }) {
-  const [revealed, setRevealed] = useState(false)
-
   return (
     <div className="space-y-4">
-      {/* Hero card - replaces broken video */}
-      <div
-        className="w-full rounded-2xl overflow-hidden relative border border-white/10 shadow-2xl"
-        style={{ background: 'linear-gradient(135deg, #071810 0%, #0a1f14 40%, #06121e 100%)', minHeight: 200 }}
-      >
-        {/* Animated glow blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-8 -left-8 w-48 h-48 rounded-full opacity-20 blur-3xl" style={{ background: accent }} />
-          <div className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full opacity-15 blur-3xl" style={{ background: '#378ADD' }} />
+      {/* YouTube embed if provided */}
+      {youtubeId && <YoutubeEmbed videoId={youtubeId} title={title} />}
+
+      {/* HTML5 video if provided */}
+      {videoSrc && !youtubeId && (
+        <div className="w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+          <video src={videoSrc} controls playsInline preload="metadata" className="w-full" style={{ maxHeight: 360, objectFit: 'cover' }} />
         </div>
+      )}
 
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: 'linear-gradient(rgba(192,241,142,1) 1px, transparent 1px), linear-gradient(90deg, rgba(192,241,142,1) 1px, transparent 1px)',
-          backgroundSize: '32px 32px'
-        }} />
-
-        <div className="relative z-10 p-6 pb-8">
-          {/* Tag */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60" style={{ color: accent }}>Concept Module</span>
+      {/* Hero card (shows when no video) */}
+      {!youtubeId && !videoSrc && (
+        <div className="w-full rounded-2xl overflow-hidden relative border border-white/10 shadow-2xl"
+          style={{ background: 'linear-gradient(135deg, #071810 0%, #0a1f14 40%, #06121e 100%)', minHeight: 200 }}>
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute -top-8 -left-8 w-48 h-48 rounded-full opacity-20 blur-3xl" style={{ background: accent }} />
+            <div className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full opacity-15 blur-3xl" style={{ background: '#378ADD' }} />
           </div>
-
-          {/* Title */}
-          {title && (
-            <h3 className="font-display text-2xl font-black text-white leading-tight mb-5 drop-shadow-lg">{title}</h3>
-          )}
-
-          {/* Stats row */}
-          {stats && stats.length > 0 && (
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(stats.length, 3)}, 1fr)` }}>
-              {stats.map((s, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="rounded-xl p-3 text-center"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <p className="font-mono text-xl font-black" style={{ color: accent }}>{s.value}</p>
-                  <p className="text-[9px] text-white/35 uppercase tracking-widest mt-1 leading-tight">{s.label}</p>
-                </motion.div>
-              ))}
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: 'linear-gradient(rgba(192,241,142,1) 1px, transparent 1px), linear-gradient(90deg, rgba(192,241,142,1) 1px, transparent 1px)',
+            backgroundSize: '32px 32px'
+          }} />
+          <div className="relative z-10 p-6 pb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: accent }} />
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60" style={{ color: accent }}>Concept Module</span>
             </div>
-          )}
+            {title && <h3 className="font-display text-2xl font-black text-white leading-tight mb-5 drop-shadow-lg">{title}</h3>}
+            {stats && stats.length > 0 && (
+              <StatGrid stats={stats.map(s => ({ ...s, color: accent }))} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Stats below video when video present */}
+      {(youtubeId || videoSrc) && stats && stats.length > 0 && (
+        <StatGrid stats={stats.map(s => ({ ...s, color: accent }))} />
+      )}
 
       {/* Text body */}
-      <div
-        className="rounded-2xl p-5"
-        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        <div className="font-sans text-sm text-white/75 leading-[1.8] space-y-3">
-          {content}
-        </div>
+      <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="font-sans text-sm text-white/75 leading-[1.8] space-y-3">{content}</div>
       </div>
 
       {/* Kinu insight */}
       {insight && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="rounded-2xl p-4 flex gap-3 items-start"
-          style={{ background: `${accent}0d`, border: `1px solid ${accent}20` }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+          className="rounded-2xl p-4 flex gap-3 items-start" style={{ background: `${accent}0d`, border: `1px solid ${accent}20` }}>
           <Brain className="w-5 h-5 shrink-0 mt-0.5" style={{ color: accent }} />
           <p className="text-xs leading-relaxed italic" style={{ color: `${accent}bb` }}>{insight}</p>
         </motion.div>

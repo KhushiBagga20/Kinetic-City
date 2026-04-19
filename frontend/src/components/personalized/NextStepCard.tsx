@@ -98,10 +98,12 @@ export default function NextStepCard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-3xl p-5 border cursor-pointer group"
+      whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(192,241,142,0.15)', borderColor: 'rgba(192,241,142,0.3)' }}
+      whileTap={{ scale: 0.98 }}
+      className="rounded-3xl p-5 border cursor-pointer group transition-all duration-300"
       style={{
         background: 'var(--surface)',
-        borderColor: 'var(--border)',
+        borderColor: 'rgba(192,241,142,0.1)',
         borderLeft: '3px solid var(--accent)',
       }}
       onClick={() => setDashboardSection(step.route)}

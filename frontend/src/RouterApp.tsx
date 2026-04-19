@@ -24,7 +24,10 @@ function DashboardRoute() {
   const activeModuleId = useAppStore(s => s.activeModuleId)
   const setActiveModuleId = useAppStore(s => s.setActiveModuleId)
 
-  // Sync URL to Store
+  // Sync URL to Store (one-way only: URL → Store)
+  // The "Store → URL" direction was removed — it created an infinite loop:
+  // navigate() → URL change → useEffect re-fires → setDashboardSection → re-render → repeat.
+  // Components that want to navigate call navigate() directly (which they already do).
   useEffect(() => {
     if (moduleId) {
       if (dashboardSection !== 'module-reader') setDashboardSection('module-reader')
@@ -35,20 +38,8 @@ function DashboardRoute() {
     } else {
       navigate('/dashboard/home', { replace: true })
     }
-    // Deliberately omitting dashboardSection and activeModuleId so it only triggers on URL change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, moduleId, navigate, setDashboardSection, setActiveModuleId])
-
-  // Sync Store to URL
-  useEffect(() => {
-    if (dashboardSection === 'module-reader') {
-      if (activeModuleId && moduleId !== activeModuleId) {
-        navigate(`/dashboard/module/${activeModuleId}`)
-      }
-    } else if (dashboardSection && section !== dashboardSection) {
-      navigate(`/dashboard/${dashboardSection}`)
-    }
-  }, [dashboardSection, activeModuleId, navigate, section, moduleId])
+  }, [section, moduleId])
 
   if (!fearType) return <Navigate to="/start" replace />
   return <PersonalizedDashboard />

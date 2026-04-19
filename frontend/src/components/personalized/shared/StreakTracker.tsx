@@ -43,7 +43,8 @@ export default function StreakTracker() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="rounded-3xl p-6 border"
+      whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
+      className="rounded-3xl p-6 border transition-all duration-300"
       style={{
         background: 'var(--surface)',
         backdropFilter: 'blur(20px)',

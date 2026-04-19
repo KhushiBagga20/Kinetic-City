@@ -126,7 +126,8 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-3xl border overflow-hidden"
+      whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
+      className="rounded-3xl border overflow-hidden transition-all duration-300"
       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {/* Shimmer keyframes */}

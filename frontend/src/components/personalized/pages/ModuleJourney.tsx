@@ -3,61 +3,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../../store/useAppStore'
 import { getTrackForFear } from '../../../lib/curriculumData'
-import { ArrowLeft, Check, Activity } from 'lucide-react'
+import { ArrowLeft, Check, Activity, ChevronRight, Clock, BookOpen } from 'lucide-react'
 import { getModulesForFear } from './LearnPage'
 import { generateKinuChat } from '../../../lib/kinuAI'
-
-// --- Playful SVG Components ---
-function InteractiveSnowball() {
-  const [size, setSize] = useState(1)
-  return (
-    <div className="flex flex-col items-center justify-center p-8 bg-[#0a1a00]/30 rounded-3xl border border-[#c0f18e]/20 my-8">
-      <motion.svg
-        width={100 + size * 10}
-        height={100 + size * 10}
-        viewBox="0 0 100 100"
-        className="mb-6 drop-shadow-[0_0_15px_rgba(192,241,142,0.4)]"
-      >
-        <circle cx="50" cy="50" r="45" fill="#c0f18e" opacity="0.9" />
-        <path d="M 20 40 Q 50 20 80 40" fill="none" stroke="#fff" strokeWidth="4" opacity="0.3" strokeLinecap="round" />
-        <path d="M 30 60 Q 50 80 70 60" fill="none" stroke="#fff" strokeWidth="3" opacity="0.2" strokeLinecap="round" />
-      </motion.svg>
-      <p className="font-sans text-sm text-[#c0f18e] mb-4 font-bold tracking-widest uppercase">Snowball Accelerator</p>
-      <input
-        type="range" min="1" max="20" value={size} onChange={(e) => setSize(Number(e.target.value))}
-        className="w-48 h-2 rounded-full appearance-none cursor-pointer mb-2"
-        style={{ background: 'rgba(192,241,142,0.2)', accentColor: '#c0f18e' }}
-      />
-      <p className="font-mono text-xs text-white/40">Drag to compound</p>
-    </div>
-  )
-}
-
-function PanicSlider() {
-  const [panic, setPanic] = useState(50)
-  const isPanic = panic > 75
-
-  return (
-    <div className="flex flex-col items-center justify-center p-8 bg-[#1a0a0a]/30 rounded-3xl border border-[#E24B4A]/20 my-8">
-      <motion.svg
-        width="150" height="80" viewBox="0 0 150 80"
-        animate={{ scale: isPanic ? 0.9 : 1, y: isPanic ? 5 : 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-      >
-        <path d="M 10 40 Q 40 10 75 40 T 140 40" fill="none" stroke={isPanic ? "#E24B4A" : "#1D9E75"} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-      </motion.svg>
-      <p className="font-sans text-sm text-center mb-6 mt-4" style={{ color: isPanic ? '#E24B4A' : '#1D9E75' }}>
-        {isPanic ? "You panic sold! Locked in losses." : "Holding steady through the dip."}
-      </p>
-      <input
-        type="range" min="0" max="100" value={panic} onChange={(e) => setPanic(Number(e.target.value))}
-        className="w-48 h-2 rounded-full appearance-none cursor-pointer"
-        style={{ background: 'rgba(226,75,74,0.2)', accentColor: isPanic ? '#E24B4A' : '#1D9E75' }}
-      />
-      <p className="font-mono text-xs text-white/40 mt-4">Pressure level</p>
-    </div>
-  )
-}
 
 export default function ModuleJourney() {
   const navigate = useNavigate()
@@ -67,195 +15,264 @@ export default function ModuleJourney() {
   const completedModules = useAppStore(s => s.completedModules)
 
   const track = getTrackForFear(fearType)
+  const contentModules = getModulesForFear(fearType)
 
-  // AI State
   const [kinuReaction, setKinuReaction] = useState<string | null>(null)
   const [kinuLoading, setKinuLoading] = useState(false)
+  const [completing, setCompleting] = useState(false)
+
+  useEffect(() => {
+    if (!activeModuleId) navigate('/dashboard/learn', { replace: true })
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+    setKinuReaction(null)
+  }, [activeModuleId, navigate])
+
+  const activeModuleIndex = track.findIndex(m => m.id === activeModuleId)
+  const isModuleValid = activeModuleId && track.some(m => m.id === activeModuleId)
+
+  if (!activeModuleId || !isModuleValid) return null
+
+  const currentModule = track[activeModuleIndex]
+  const contentModule = contentModules.find(m => m.id === activeModuleId)
+  const isCompleted = completedModules.includes(currentModule.id)
+  const nextModule = track[activeModuleIndex + 1]
+  const prevModule = track[activeModuleIndex - 1]
+
+  const liveContext: Record<string, string> = {
+    loss: 'Markets saw a 1.2% dip today. This module will help you understand why your instincts say "sell" — and why ignoring that instinct builds wealth.',
+    jargon: 'There is a lot of buzz today around "XIRR" in the news. This module will help you cut through the noise and understand what actually matters.',
+    scam: 'A new crypto phishing scheme is trending on Telegram. Master this module to make your finances scam-proof.',
+    trust: 'Active funds underperformed the Nifty 50 again this month. This module shows exactly why automation beats human fund managers.',
+  }
 
   const askKinu = async (feeling: string) => {
     setKinuLoading(true)
     setKinuReaction(null)
     try {
       const data = await generateKinuChat({
-        message: `The user just read the module '${activeModuleId}' and felt: '${feeling}'. Give them a very brief (2 sentences max), encouraging and insightful response tailored to their fear type.`,
+        message: `The user just read the module '${currentModule.title}' and felt: '${feeling}'. Give them a very brief (2 sentences max), encouraging and insightful response tailored to their fear type.`,
         fear_type: fearType,
         context: 'module_journey_feedback',
         conversation_history: [],
       })
       setKinuReaction(data.reply)
     } catch {
-      setKinuReaction("I'm having trouble connecting to my servers right now, but keep going! You're doing great.")
+      setKinuReaction("You're doing great — keep going. Every module brings you closer to fearless investing.")
     } finally {
       setKinuLoading(false)
     }
   }
 
-  // Security check: must be valid module, valid track
-  const isModuleValid = activeModuleId && track.some(m => m.id === activeModuleId)
-  const activeModuleIndex = track.findIndex(m => m.id === activeModuleId)
+  const handleComplete = () => {
+    setCompleting(true)
+    if (!isCompleted) completeModule(currentModule.id, (currentModule as any).fearProgressIncrement)
+    setTimeout(() => navigate('/dashboard/learn'), 400)
+  }
 
-  useEffect(() => {
-    // Basic guard
-    if (!activeModuleId) {
-      navigate('/dashboard/learn', { replace: true })
-    }
-  }, [activeModuleId, navigate])
-
-  if (!activeModuleId || !isModuleValid) return null
-
-  const currentModule = track[activeModuleIndex]
-  const isCompleted = completedModules.includes(currentModule.id)
-  
-  // Real Content extraction
-  const contentModules = getModulesForFear(fearType)
-  const contentModule = contentModules.find(m => m.id === activeModuleId)
-
-  // Example Live Context based on Fear Type
-  const liveContextMap: Record<string, string> = {
-    'loss': 'Markets saw a sudden 1.2% dip today. This module is perfectly timed to help you understand why your instincts want to sell, and why holding is statistically safer right now.',
-    'jargon': 'There is a lot of buzz today around "XIRR" in the news. This module will help you speak the language effortlessly.',
-    'scam': 'A new crypto phishing scam is trending today. Master this module to build your impenetrable filter.',
-    'trust': 'Active funds generally underperformed the Nifty 50 again this week. This module shows you why automation beats speculation.'
+  const goToModule = (moduleId: string) => {
+    useAppStore.getState().setActiveModuleId(moduleId)
+    navigate(`/dashboard/module/${moduleId}`)
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[300] bg-[var(--bg)] overflow-y-auto pb-[120px]"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen"
     >
-      {/* Immersive Top Bar */}
-      <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
+      {/* ── Top breadcrumb bar ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-8">
         <button
           onClick={() => navigate('/dashboard/learn')}
-          className="flex items-center gap-2 font-sans text-sm font-medium text-white/50 hover:text-white/80 transition-colors cursor-pointer"
+          className="flex items-center gap-2 text-sm font-medium transition-colors cursor-pointer"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.8)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
         >
-          <ArrowLeft className="w-4 h-4" /> Exit Journey
+          <ArrowLeft className="w-4 h-4" />
+          Back to Modules
         </button>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-white/30 uppercase tracking-widest">{currentModule.id}</span>
-          <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center font-mono text-[10px] text-white/50 bg-white/5">
-            {activeModuleIndex + 1}/{track.length}
+
+        {/* Progress pill */}
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            {activeModuleIndex + 1} / {track.length}
+          </span>
+          <div className="flex gap-1">
+            {track.map((m, i) => (
+              <button
+                key={m.id}
+                onClick={() => goToModule(m.id)}
+                className="rounded-full transition-all duration-200 cursor-pointer"
+                style={{
+                  width: i === activeModuleIndex ? 20 : 6,
+                  height: 6,
+                  background: completedModules.includes(m.id)
+                    ? '#1D9E75'
+                    : i === activeModuleIndex
+                    ? '#c0f18e'
+                    : 'rgba(255,255,255,0.12)',
+                }}
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Experiential Content */}
-      <div className="w-full">
-        <div className="max-w-2xl mx-auto px-6 py-16">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="font-display font-semibold text-3xl md:text-5xl text-white tracking-tight mb-6 leading-tight"
-          >
-            {currentModule.title}
-          </motion.h1>
+      {/* ── Module header ──────────────────────────────────────────────── */}
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: 'var(--accent)' }}>
+            Module {activeModuleIndex + 1}
+          </span>
+          {isCompleted && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-sans"
+              style={{ background: 'rgba(29,158,117,0.12)', color: '#1D9E75', border: '1px solid rgba(29,158,117,0.25)' }}>
+              <Check className="w-3 h-3" /> Completed
+            </span>
+          )}
+        </div>
+        <h1 className="font-display font-bold text-3xl md:text-4xl text-white leading-tight mb-3">
+          {currentModule.title}
+        </h1>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <Clock className="w-3.5 h-3.5" />
+            {contentModule?.readTime ?? `${currentModule.estimatedMinutes} min`}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <BookOpen className="w-3.5 h-3.5" />
+            {fearType.charAt(0).toUpperCase() + fearType.slice(1)} Track
+          </span>
+        </div>
+      </div>
 
-          <div className="space-y-16 mt-12 pb-48">
-            
-            {/* 1. Live AI News Impact Context */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }} 
-              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }} 
-              viewport={{ once: true, margin: "-10%" }} 
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="rounded-2xl p-6 relative overflow-hidden group"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
-            >
-              {/* Glassmorphic hover spot */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              
-              <div className="flex items-center gap-2 mb-3">
-                <Activity className="w-4 h-4 text-[#378ADD] animate-pulse" />
-                <h4 className="font-mono text-xs text-[#378ADD] uppercase tracking-widest">Live Context</h4>
-              </div>
-              <p className="font-sans text-sm text-white/80 leading-relaxed font-light">
-                {liveContextMap[fearType]}
-              </p>
-            </motion.div>
+      {/* ── Live context strip ─────────────────────────────────────────── */}
+      <div className="rounded-2xl p-4 mb-8 flex items-start gap-3"
+        style={{ background: 'rgba(55,138,221,0.06)', border: '1px solid rgba(55,138,221,0.15)' }}>
+        <Activity className="w-4 h-4 mt-0.5 shrink-0 text-[#378ADD] animate-pulse" />
+        <p className="font-sans text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
+          {liveContext[fearType]}
+        </p>
+      </div>
 
-            {/* 2. Main Content Module (Cinematic Reveal) */}
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true, margin: "-5%" }} 
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-            >
-              {contentModule ? contentModule.content : (
-                <div className="flex flex-col gap-8">
-                   {currentModule.id.includes('loss') ? <PanicSlider /> : <InteractiveSnowball />}
-                   <p className="font-sans text-lg text-white/80 leading-relaxed font-light">Immersive content loading...</p>
+      {/* ── Main module content ────────────────────────────────────────── */}
+      <div className="mb-12">
+        {contentModule ? contentModule.content : (
+          <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="text-white/40 text-sm">Content loading…</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── KINU reaction widget ───────────────────────────────────────── */}
+      <div className="rounded-2xl p-6 mb-10 relative overflow-hidden"
+        style={{ background: 'rgba(10,10,15,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c0f18e]/30 to-transparent" />
+        <div className="flex gap-4">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center font-display text-sm font-bold shrink-0"
+            style={{ background: 'rgba(192,241,142,0.1)', color: 'var(--accent)', border: '1px solid rgba(192,241,142,0.2)' }}>
+            K
+          </div>
+          <div className="flex-1">
+            {!kinuReaction && !kinuLoading && (
+              <>
+                <p className="font-sans text-sm text-white/60 italic mb-4">
+                  "You made it through this module. How did that land for you?"
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => askKinu("I'm confused")}
+                    className="px-4 py-2 rounded-full text-xs font-sans border cursor-pointer transition-colors"
+                    style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}>
+                    I'm confused 🤔
+                  </button>
+                  <button onClick={() => askKinu("Makes sense now")}
+                    className="px-4 py-2 rounded-full text-xs font-sans cursor-pointer transition-colors"
+                    style={{ border: '1px solid rgba(192,241,142,0.3)', color: '#c0f18e', background: 'rgba(192,241,142,0.05)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,241,142,0.12)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,241,142,0.05)')}>
+                    Makes sense 💡
+                  </button>
+                  <button onClick={() => askKinu("I want to know more")}
+                    className="px-4 py-2 rounded-full text-xs font-sans cursor-pointer transition-colors"
+                    style={{ border: '1px solid rgba(55,138,221,0.3)', color: '#378ADD', background: 'rgba(55,138,221,0.05)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(55,138,221,0.12)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(55,138,221,0.05)')}>
+                    Tell me more 📖
+                  </button>
                 </div>
-              )}
-            </motion.div>
-
-            {/* 3. Embedded KINU Micro-Interaction */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.6 }}
-              className="flex gap-4 p-6 rounded-3xl bg-[#0a0a0f]/50 border border-white/5 shadow-2xl relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-20" />
-              
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-display text-sm font-bold shrink-0 self-start mt-1" style={{ background: 'rgba(192,241,142,0.1)', color: 'var(--accent)', border: '1px solid rgba(192,241,142,0.2)' }}>
-                K
+              </>
+            )}
+            {kinuLoading && (
+              <div className="flex gap-2 py-2">
+                {[0, 1, 2].map(i => (
+                  <motion.div key={i} className="w-2 h-2 rounded-full"
+                    style={{ background: '#c0f18e' }}
+                    animate={{ opacity: [0.2, 1, 0.2], scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
+                ))}
               </div>
-              <div className="flex-1">
-                {!kinuReaction && !kinuLoading ? (
-                  <>
-                    <p className="font-sans text-sm md:text-base text-white/70 italic mb-4">"Alright, you made it through this module. How did that sit with you?"</p>
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => askKinu("I'm confused")} className="px-4 py-2 rounded-full text-xs font-sans border border-white/10 text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer">I'm confused 🤔</button>
-                      <button onClick={() => askKinu("Makes sense")} className="px-4 py-2 rounded-full text-xs font-sans border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/5 hover:bg-[var(--accent)]/15 transition-colors shadow-[0_0_15px_rgba(192,241,142,0.1)] cursor-pointer">Makes sense 💡</button>
-                    </div>
-                  </>
-                ) : kinuLoading ? (
-                  <div className="flex gap-2 mt-4">
-                    {[0, 1, 2].map(dot => (
-                      <motion.div key={dot} className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(192,241,142,0.5)]"
-                        animate={{ opacity: [0.2, 1, 0.2], scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.2 }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <p className="font-sans text-sm md:text-base text-white/90 leading-relaxed font-light">
-                      {kinuReaction}
-                    </p>
-                    <button onClick={() => setKinuReaction(null)} className="mt-4 text-[10px] uppercase tracking-widest text-white/30 hover:text-white/50 transition-colors">Reset</button>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
+            )}
+            {kinuReaction && !kinuLoading && (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                <p className="font-sans text-sm text-white/85 leading-relaxed">{kinuReaction}</p>
+                <button onClick={() => setKinuReaction(null)}
+                  className="mt-3 text-[10px] uppercase tracking-widest cursor-pointer"
+                  style={{ color: 'rgba(255,255,255,0.25)' }}>
+                  Ask again
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Persistent Bottom Completion Bar */}
-      <motion.div 
-        initial={{ y: 100 }} 
-        animate={{ y: 0 }} 
-        transition={{ delay: 0.5, type: 'spring', damping: 20 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm rounded-[32px] p-2 bg-[#050508]/90 backdrop-blur-2xl border border-white/10 flex items-center justify-between shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-[400]"
-      >
-        <div className="px-4 flex items-center gap-2">
-           <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_rgba(192,241,142,0.5)] animate-pulse" />
-           <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--accent)]">Journey Active</span>
-        </div>
-        <button
-          onClick={() => {
-            if (!isCompleted) completeModule(currentModule.id, currentModule.fearProgressIncrement)
-            navigate('/dashboard/learn')
+      {/* ── Navigation: prev / complete / next ────────────────────────── */}
+      <div className="flex items-center justify-between gap-4 pb-16">
+        {/* Previous */}
+        {prevModule ? (
+          <button onClick={() => goToModule(prevModule.id)}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium cursor-pointer transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.8)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}>
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Previous</span>
+          </button>
+        ) : <div />}
+
+        {/* Mark Complete */}
+        <motion.button
+          onClick={handleComplete}
+          disabled={completing}
+          whileTap={{ scale: 0.97 }}
+          className="flex-1 max-w-xs flex items-center justify-center gap-2 py-3.5 rounded-2xl font-sans font-bold text-sm cursor-pointer transition-all"
+          style={{
+            background: isCompleted ? 'rgba(29,158,117,0.15)' : 'var(--accent)',
+            color: isCompleted ? '#1D9E75' : '#0a1a00',
+            border: isCompleted ? '1px solid rgba(29,158,117,0.3)' : 'none',
           }}
-          className="px-6 py-3 rounded-full font-sans text-sm font-bold active:scale-[0.97] transition-[transform,background-color] duration-200 flex items-center gap-2 bg-[var(--accent)] text-[#0a1a00] hover:bg-opacity-90 cursor-pointer"
         >
-          {isCompleted ? 'Return' : 'Mark Complete'} <Check className="w-4 h-4" />
-        </button>
-      </motion.div>
+          <Check className="w-4 h-4" />
+          {isCompleted ? 'Completed — Return' : 'Mark Complete & Continue'}
+        </motion.button>
+
+        {/* Next */}
+        {nextModule ? (
+          <button onClick={() => goToModule(nextModule.id)}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium cursor-pointer transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.8)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}>
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        ) : <div />}
+      </div>
     </motion.div>
   )
 }

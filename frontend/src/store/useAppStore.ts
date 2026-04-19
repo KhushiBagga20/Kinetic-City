@@ -314,7 +314,14 @@ export const useAppStore = create<AppState>()(
 
       // ── Dashboard Section ───────────────────────────────────────────────────
       dashboardSection: 'home',
-      setDashboardSection: (dashboardSection) => set({ dashboardSection }),
+      setDashboardSection: (dashboardSection) => {
+        set({ dashboardSection })
+        // Keep the URL in sync when components call this directly (without using navigate())
+        const targetPath = `/dashboard/${dashboardSection}`
+        if (window.location.pathname !== targetPath) {
+          window.history.pushState({}, '', targetPath)
+        }
+      },
       activeModuleId: null,
       setActiveModuleId: (activeModuleId) => set({ activeModuleId }),
 

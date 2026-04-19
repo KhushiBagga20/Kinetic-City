@@ -49,7 +49,8 @@ export default function GoalCard({ goal }: { goal: Goal }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="rounded-2xl p-4 border"
+      whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
+      className="rounded-2xl p-4 border transition-all duration-300 cursor-default"
       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {/* Header */}

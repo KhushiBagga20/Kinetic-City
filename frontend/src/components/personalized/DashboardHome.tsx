@@ -139,7 +139,8 @@ export default function DashboardHome() {
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="rounded-3xl border mb-6"
+        whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
+        className="rounded-3xl border mb-6 transition-all duration-300"
         style={{ background: 'var(--surface)', borderColor: 'var(--border)', padding: '28px 32px' }}
       >
         <h2 className="font-display font-medium text-white leading-tight" style={{ fontSize: 22 }}>
@@ -190,8 +191,10 @@ export default function DashboardHome() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.08 }}
               onClick={() => setDashboardSection('sandbox')}
-              className="w-full rounded-3xl p-5 border text-left group transition-all duration-200 cursor-pointer hover:scale-[1.01]"
-              style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderLeft: '3px solid var(--accent)' }}
+              className="w-full rounded-3xl p-5 border text-left group transition-all duration-300 cursor-pointer"
+              style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.1)', borderLeft: '3px solid var(--accent)' }}
+              whileHover={{ scale: 1.02, borderColor: 'rgba(192,241,142,0.3)', boxShadow: '0 8px 30px rgba(192,241,142,0.15)' }}
+              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
@@ -218,8 +221,10 @@ export default function DashboardHome() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.10 }}
               onClick={() => setDashboardSection('harvest')}
-              className="w-full rounded-3xl p-5 border text-left group transition-all duration-200 cursor-pointer hover:scale-[1.01]"
-              style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderLeft: '3px solid var(--teal)' }}
+              className="w-full rounded-3xl p-5 border text-left group transition-all duration-300 cursor-pointer"
+              style={{ background: 'var(--surface)', borderColor: 'rgba(29,158,117,0.1)', borderLeft: '3px solid var(--teal)' }}
+              whileHover={{ scale: 1.02, borderColor: 'rgba(29,158,117,0.3)', boxShadow: '0 8px 30px rgba(29,158,117,0.15)' }}
+              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2.5">
@@ -259,8 +264,9 @@ export default function DashboardHome() {
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.12 }}
-            className="rounded-3xl p-6 border"
-            style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.18)' }}
+            whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(192,241,142,0.15)', borderColor: 'rgba(192,241,142,0.4)' }}
+            className="rounded-3xl p-6 border transition-all duration-300 cursor-default"
+            style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.25)' }}
           >
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
@@ -286,10 +292,12 @@ export default function DashboardHome() {
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.14 + i * 0.02 }}
                 onClick={() => setDashboardSection(nav.section)}
-                className="rounded-2xl p-4 border text-left transition-all duration-200 hover:border-white/10 group"
-                style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+                className="rounded-2xl p-4 border text-left transition-all duration-300 group cursor-pointer"
+                style={{ background: 'var(--surface)', borderColor: 'rgba(255,255,255,0.06)' }}
+                whileHover={{ scale: 1.03, boxShadow: `0 8px 24px ${nav.color}25`, borderColor: `${nav.color}60` }}
+                whileTap={{ scale: 0.97 }}
               >
-                <nav.icon className="w-4 h-4 mb-2.5" style={{ color: nav.color }} />
+                <nav.icon className="w-4 h-4 mb-2.5 transition-transform duration-300 group-hover:scale-110" style={{ color: nav.color }} />
                 <p className="font-display font-medium text-[13px] text-white">{nav.label}</p>
                 <p className="font-sans text-[10px] text-white/25 mt-0.5">{nav.sub}</p>
               </motion.button>
@@ -303,7 +311,8 @@ export default function DashboardHome() {
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.18 }}
-            className="rounded-3xl p-6 border"
+            whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
+            className="rounded-3xl p-6 border transition-all duration-300"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
           >
             <div className="flex items-center justify-between mb-2">

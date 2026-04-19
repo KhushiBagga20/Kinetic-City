@@ -33,7 +33,8 @@ export default function LearnShortcutCard() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.08 }}
-      className="rounded-2xl p-4 border"
+      whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
+      className="rounded-2xl p-4 border transition-all duration-300"
       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {!hasCompletedBasics ? (
