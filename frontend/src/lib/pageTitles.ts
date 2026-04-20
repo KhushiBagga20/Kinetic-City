@@ -17,6 +17,8 @@ const SECTION_TITLES: Record<string, string> = {
   kinu:          'KINU',
   'my-card':     'My Card',
   profile:       'Profile',
+  'module-reader':'Learning',
+  roadmap:       'Roadmap',
 }
 
 /** Set the browser tab title for a given dashboard section. */

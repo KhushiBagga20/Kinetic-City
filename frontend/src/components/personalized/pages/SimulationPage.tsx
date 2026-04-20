@@ -445,6 +445,14 @@ export default function SimulationPage() {
         <p className="font-sans text-xs text-white/35 mb-6">India's market has survived everything. Here's the visual proof.</p>
         <CrashTimeline />
       </div>
+
+      {/* Disclaimer */}
+      <p className="font-sans text-[10px] text-center mt-8 pb-2"
+         style={{ color: 'rgba(255,255,255,0.18)' }}>
+        Simulated for educational purposes only. Past performance does not
+        guarantee future results. Not financial advice.
+        Data sourced from NSE India historical records.
+      </p>
     </motion.div>
   )
 }

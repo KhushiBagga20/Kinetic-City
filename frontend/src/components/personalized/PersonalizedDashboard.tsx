@@ -99,6 +99,16 @@ export default function PersonalizedDashboard() {
   // Set dynamic page title per section
   useEffect(() => { setPageTitle(dashboardSection) }, [dashboardSection])
 
+  // FIX 4 — Scroll to top on nav change (skip first render)
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [dashboardSection])
+
   /* ── Dropdown state — only one open at a time ─────────────────────── */
   const [openDropdown, setOpenDropdown] = useState<'profile' | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState(false)
@@ -307,6 +317,16 @@ export default function PersonalizedDashboard() {
                         </button>
                       )}
                     </div>
+
+                    {/* FIX 5 — About section */}
+                    <div style={{ borderTop:'1px solid rgba(255,255,255,0.05)', marginTop:8, paddingTop:8, padding:'8px 12px' }}>
+                      <p style={{ fontSize:10, color:'rgba(255,255,255,0.2)', lineHeight:1.6 }}>
+                        KINETIC · Finvasia Innovation Hackathon 2026
+                      </p>
+                      <p style={{ fontSize:10, color:'rgba(255,255,255,0.15)', marginTop:2 }}>
+                        Powered by Finvasia Shoonya API
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -509,7 +529,7 @@ export default function PersonalizedDashboard() {
       {/* ══════════════════════════════════════════════════════════════════
           MAIN CONTENT — padding-top: 60px for fixed navbar
           ══════════════════════════════════════════════════════════════════ */}
-      <main className="relative z-[1] pb-16 md:pb-0 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
+      <main className="relative z-[1] pb-20 md:pb-8 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
         <div className="max-w-[1200px] mx-auto py-8">
           <AnimatePresence mode="wait">
             <motion.div

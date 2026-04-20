@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import {
   fetchUser,
   fetchPortfolioSummary,
@@ -240,9 +239,13 @@ interface AppState {
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
+// Clear any stale localStorage cache from previous persist-enabled builds
+if (typeof window !== 'undefined') {
+  localStorage.removeItem('kinetic-app-state')
+}
+
 export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // ── View ────────────────────────────────────────────────────────────────
       view: 'landing',
       setView: (view) => {
@@ -508,62 +511,7 @@ export const useAppStore = create<AppState>()(
           })
         }
       },
-    }),
-    {
-      name: 'kinetic-app-state',
-      version: 1,  // bump this to clear any stale persisted state
-      partialize: (state) => ({
-        fearType: state.fearType,
-        metaphorStyle: state.metaphorStyle,
-        userName: state.userName,
-        userEmail: state.userEmail,
-        guestId: state.guestId,
-        userId: state.userId,
-        isAuthenticated: state.isAuthenticated,
-        portfolioSetup: state.portfolioSetup,
-        selectedFund: state.selectedFund,
-        sipDate: state.sipDate,
-        portfolioSetupDate: state.portfolioSetupDate,
-        monthlyAmount: state.monthlyAmount,
-        years: state.years,
-        currentSavings: state.currentSavings,
-        // NOTE: view and step are intentionally excluded —
-        // they must always reset on a fresh page load so the
-        // app starts at the landing page, not mid-quiz.
-        fearProgress: state.fearProgress,
-        completedModules: state.completedModules,
-        streakDays: state.streakDays,
-        lastVisitDate: state.lastVisitDate,
-        simulationResult: state.simulationResult,
-        timeMachineResult: state.timeMachineResult,
-        sandboxResult: state.sandboxResult,
-        riskHorizonYears: state.riskHorizonYears,
-        userAge: state.userAge,
-        portfolioPulseView: state.portfolioPulseView,
-        dashboardSection: state.dashboardSection,
-        // Onboarding
-        hasCompletedOnboarding: state.hasCompletedOnboarding,
-        // Gamification
-        xpPoints: state.xpPoints,
-        acknowledgedStreakMilestones: state.acknowledgedStreakMilestones,
-        dailyActions: state.dailyActions,
-        // KINU
-        kinuIntroSeen: state.kinuIntroSeen,
-        // Fix 4 — Card customisation
-        cardStyle: state.cardStyle,
-        cardHeadline: state.cardHeadline,
-        cardVisibleStats: state.cardVisibleStats,
-        // Fix 5 — Crypto
-        cryptoEnabled: state.cryptoEnabled,
-        // Fix 6 — Harvest
-        harvestResults: state.harvestResults,
-        // Goals & Portfolio
-        goals: state.goals,
-        manualHoldings: state.manualHoldings,
-        watchlist: state.watchlist,
-      }),
-    }
-  )
+    })
 )
 
 

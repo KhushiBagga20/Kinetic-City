@@ -1,11 +1,19 @@
 import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Lenis from 'lenis'
 import { useAppStore } from './store/useAppStore'
 import MarketingLanding from './components/marketing/MarketingLanding'
 import AppFlow from './App'
 import PersonalizedDashboard from './components/personalized/PersonalizedDashboard'
 import LoginModal from './components/auth/LoginModal'
+import { setLandingTitle } from './lib/pageTitles'
+
+// Thin wrapper so we can set the landing page title without touching MarketingLanding.tsx
+function LandingRoute() {
+  useEffect(() => { setLandingTitle() }, [])
+  return <MarketingLanding />
+}
 
 // /start — boot the view-based App in quiz mode
 function StartRoute() {
@@ -54,6 +62,12 @@ function SandboxRoute() {
 
 export default function RouterApp() {
   const [loginOpen, setLoginOpen] = useState(false)
+  const [splashDone, setSplashDone] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setSplashDone(true), 1200)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     const lenis = new Lenis({ lerp: 0.08, smoothWheel: true })
@@ -71,8 +85,46 @@ export default function RouterApp() {
 
   return (
     <>
+      {/* ── Splash screen — shown for 1.2s then fades out ── */}
+      <AnimatePresence>
+        {!splashDone && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="fixed inset-0 z-[1000] flex flex-col items-center justify-center"
+            style={{ background: '#00161b' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="flex items-center gap-3"
+            >
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-display font-black text-[18px]"
+                style={{ background: '#c0f18e', color: '#00161b' }}>
+                K
+              </div>
+              <span className="font-display font-bold text-white text-[28px] tracking-tight">
+                KINETIC
+              </span>
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="font-sans text-[12px] mt-3"
+              style={{ color: 'rgba(255,255,255,0.25)' }}
+            >
+              Overcome your investing fear.
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Routes>
-        <Route path="/" element={<MarketingLanding />} />
+        <Route path="/" element={<LandingRoute />} />
         <Route path="/start" element={<StartRoute />} />
         <Route path="/dashboard" element={<DashboardRoute />} />
         <Route path="/dashboard/:section" element={<DashboardRoute />} />

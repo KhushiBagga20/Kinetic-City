@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo } from 'react'
 import { useAppStore, type Goal } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
+import { generateKinuChat } from '../../../lib/kinuAI'
 import { Shield, Car, Home, Sun, Heart, GraduationCap, Pencil, X, Target } from 'lucide-react'
 
 /* ── Goal categories ─────────────────────────────────────────────────────── */
@@ -39,6 +40,11 @@ export default function GoalCreation({ onClose }: GoalCreationProps) {
 
   const addGoal = useAppStore(s => s.addGoal)
   const monthlyAmount = useAppStore(s => s.monthlyAmount)
+  const fearType = useAppStore(s => s.fearType) ?? 'loss'
+
+  // KINU reaction state
+  const [kinuReaction, setKinuReaction] = useState<string | null>(null)
+  const [showReaction, setShowReaction] = useState(false)
 
   const sipNeeded = useMemo(() => Math.round(requiredSIP(targetAmount, 0.14, targetYears)), [targetAmount, targetYears])
   const isCovered = monthlyAmount >= sipNeeded
@@ -60,7 +66,52 @@ export default function GoalCreation({ onClose }: GoalCreationProps) {
       category,
       linkedSIPAmount: Math.min(monthlyAmount, sipNeeded),
     })
-    onClose()
+
+    // Show KINU reaction screen
+    setShowReaction(true)
+    generateKinuChat({
+      message: `Just set a goal: ${goalName}, target ₹${targetAmount.toLocaleString('en-IN')} in ${targetYears} years. Monthly SIP needed: ₹${sipNeeded.toLocaleString('en-IN')}.`,
+      fear_type: fearType,
+      context: 'goal_creation',
+      conversation_history: [],
+    }).then(d => setKinuReaction(d.reply)).catch(() => {})
+  }
+
+  // KINU reaction screen — shown after goal is added
+  if (showReaction) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.3 }}
+        className="overflow-hidden rounded-2xl border mb-4"
+        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-8 px-6"
+        >
+          <div
+            className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center font-display font-bold text-lg"
+            style={{ background: 'rgba(192,241,142,0.1)', color: 'var(--accent)' }}
+          >
+            K
+          </div>
+          <p className="font-display font-semibold text-white text-[18px] mb-3">Goal set.</p>
+          <p className="font-sans text-[14px] text-white/55 leading-relaxed mb-6 max-w-[280px] mx-auto">
+            {kinuReaction || 'Every big goal starts with a single SIP. You just took step one.'}
+          </p>
+          <button
+            onClick={onClose}
+            className="bg-[#c0f18e] text-[#0a1a00] font-bold px-8 py-3 rounded-full text-[14px] active:scale-[0.97] transition-transform"
+          >
+            Let's go →
+          </button>
+        </motion.div>
+      </motion.div>
+    )
   }
 
   return (

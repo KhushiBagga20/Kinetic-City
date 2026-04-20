@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { postCreateUser, postSignIn } from '../../../lib/api'
 import { formatINR } from '../../../lib/formatINR'
+import { generateKinuChat } from '../../../lib/kinuAI'
 import {
   TrendingUp, TrendingDown, Zap, BarChart3, Wallet,
   ChevronRight, Check, ArrowRight, Eye, EyeOff, LogIn, Share2,
@@ -626,6 +627,11 @@ function ActivePortfolio() {
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const newsItems = useAppStore(s => s.newsItems) || []
 
+  // Dynamic AI portfolio insight
+  const [portfolioInsight, setPortfolioInsight] = useState<string | null>(null)
+  const [insightLoading, setInsightLoading] = useState(false)
+  const insightFetchedRef = useRef(false)
+
   // Calculate months since portfolio setup — source: portfolioSetupDate from Zustand, set when user completes Start Investing flow
   const monthsSinceSetup = useMemo(() => {
     if (!portfolioSetupDate) return 0
@@ -750,7 +756,25 @@ function ActivePortfolio() {
     { title: 'XIRR', value: `${safeReturnsPct > 0 ? '+' : ''}${(safeReturnsPct * 0.85).toFixed(1)}%`, subtext: 'annualised return', highlight: true },
   ]
 
-  const insight = FEAR_PORTFOLIO_INSIGHTS[fearType]
+  const displayInsight = portfolioInsight ?? FEAR_PORTFOLIO_INSIGHTS[fearType]
+
+  // Fetch AI insight on mount
+  useEffect(() => {
+    if (insightFetchedRef.current) return
+    insightFetchedRef.current = true
+    setInsightLoading(true)
+    const prompt = monthsSinceSetup > 0
+      ? `Portfolio: ${selectedFund}, invested ₹${Math.round(totalInvested).toLocaleString('en-IN')}, current value ₹${Math.round(currentValue).toLocaleString('en-IN')}, returns ${returnsPct.toFixed(1)}%. Give a 2-sentence portfolio assessment for a ${fearType} investor.`
+      : `New investor just set up their first SIP in ${selectedFund}. Give an encouraging 2-sentence message to start their investing journey for a ${fearType} investor.`
+    generateKinuChat({
+      message: prompt,
+      fear_type: fearType,
+      context: 'portfolio_review',
+      conversation_history: [],
+    })
+    .then(d => { setPortfolioInsight(d.reply); setInsightLoading(false) })
+    .catch(() => setInsightLoading(false))
+  }, [fearType])
 
   return (
     <motion.div {...PAGE_TRANSITION} key="active" className="space-y-6">
@@ -887,7 +911,7 @@ function ActivePortfolio() {
         </div>
         <div className="rounded-2xl p-5 border flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
           <p className="font-sans text-[9px] text-white/20 uppercase tracking-wider mb-2">KINU on your portfolio</p>
-          <p className="font-sans text-sm text-white/50 leading-relaxed">{insight}</p>
+          <p className={`font-sans text-sm text-white/50 leading-relaxed${insightLoading ? ' animate-pulse' : ''}`}>{displayInsight}</p>
         </div>
       </motion.div>
 

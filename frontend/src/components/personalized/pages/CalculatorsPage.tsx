@@ -3,6 +3,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Chart, registerables } from 'chart.js'
 import { formatINR } from '../../../lib/formatINR'
 import { Calculator, TrendingDown, ArrowRight, Zap } from 'lucide-react'
+import { generateKinuChat } from '../../../lib/kinuAI'
+import { useAppStore } from '../../../store/useAppStore'
 
 Chart.register(...registerables)
 
@@ -102,11 +104,15 @@ export default function CalculatorsPage() {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 function SIPTab() {
+  const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const [monthly, setMonthly] = useState(5000)
   const [years, setYears] = useState(10)
   const [cagr, setCagr] = useState(14)
   const [stepUp, setStepUp] = useState(0)
   const [stepUpEnabled, setStepUpEnabled] = useState(false)
+  const [kinuInsight, setKinuInsight] = useState<string | null>(null)
+  const [kinuLoading, setKinuLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart | null>(null)
@@ -172,6 +178,34 @@ function SIPTab() {
   useEffect(() => { renderChart() }, [renderChart])
   useEffect(() => { return () => { chartInstance.current?.destroy() } }, [])
 
+  // Debounced KINU AI insight
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setKinuLoading(true)
+      try {
+        const corpus = stepUpEnabled
+          ? stepUpSipFV(monthly, 0.14, years, stepUp)
+          : sipFV(monthly, 0.14, years)
+        const invested = stepUpEnabled
+          ? (() => { let t = 0; let m = monthly; for(let y=0;y<years;y++){t+=m*12;m*=(1+stepUp/100)} return t })()
+          : monthly * years * 12
+        const data = await generateKinuChat({
+          message: `SIP of ₹${monthly.toLocaleString('en-IN')}/month for ${years} years${stepUpEnabled ? ` with ${stepUp}% annual step-up` : ''}. Corpus: ₹${Math.round(corpus).toLocaleString('en-IN')}. Invested: ₹${Math.round(invested).toLocaleString('en-IN')}.`,
+          fear_type: fearType,
+          context: 'sip_calculator',
+          conversation_history: [],
+        })
+        setKinuInsight(data.reply)
+      } catch {
+        setKinuInsight(null)
+      } finally {
+        setKinuLoading(false)
+      }
+    }, 1500)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [monthly, years, stepUp, stepUpEnabled, fearType])
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
       {/* Sliders */}
@@ -217,12 +251,20 @@ function SIPTab() {
       <div className="rounded-3xl p-5 border mb-6" style={{ background: 'rgba(192,241,142,0.03)', borderColor: 'rgba(192,241,142,0.12)' }}>
         <div className="flex items-start gap-3">
           <Zap className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
-          <p className="font-sans text-sm text-white/50 leading-relaxed">
-            {stepUpEnabled && stepUp > 0
-              ? `With a ${stepUp}% annual step-up, your SIP ends at ₹${Math.round(monthly * Math.pow(1 + stepUp / 100, years - 1)).toLocaleString('en-IN')}/month by year ${years}. That's the power of incremental discipline.`
-              : `₹${monthly.toLocaleString('en-IN')}/month for ${years} years. Total invested: ${formatINR(totalInvested)}. Your money worked ${multiplier}× harder than a savings account.`
-            }
-          </p>
+          {kinuLoading ? (
+            <div className="flex-1 space-y-2 py-0.5">
+              <div className="h-3 w-full rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="h-2.5 w-3/4 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+          ) : (
+            <p className="font-sans text-sm text-white/50 leading-relaxed">
+              {kinuInsight
+                ?? (stepUpEnabled && stepUp > 0
+                  ? `With a ${stepUp}% annual step-up, your SIP ends at ₹${Math.round(monthly * Math.pow(1 + stepUp / 100, years - 1)).toLocaleString('en-IN')}/month by year ${years}. That's the power of incremental discipline.`
+                  : `₹${monthly.toLocaleString('en-IN')}/month for ${years} years. Total invested: ${formatINR(totalInvested)}. Your money worked ${multiplier}× harder than a savings account.`
+                )}
+            </p>
+          )}
         </div>
       </div>
 
@@ -238,9 +280,13 @@ function SIPTab() {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 function SWPTab() {
+  const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const [corpus, setCorpus] = useState(5000000)
   const [monthlyWithdraw, setMonthlyWithdraw] = useState(25000)
   const [returnRate, setReturnRate] = useState(10)
+  const [kinuInsight, setKinuInsight] = useState<string | null>(null)
+  const [kinuLoading, setKinuLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   const months = useMemo(() => swpMonths(corpus, monthlyWithdraw, returnRate / 100), [corpus, monthlyWithdraw, returnRate])
   const isInfinite = months === Infinity || months >= 600
@@ -305,6 +351,29 @@ function SWPTab() {
   useEffect(() => { renderChart() }, [renderChart])
   useEffect(() => { return () => { chartInstance.current?.destroy() } }, [])
 
+  // Debounced KINU AI insight for SWP
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setKinuLoading(true)
+      try {
+        const durText = isInfinite ? 'forever' : `${yearsLast} years`
+        const data = await generateKinuChat({
+          message: `SWP plan: ₹${corpus.toLocaleString('en-IN')} corpus, withdrawing ₹${monthlyWithdraw.toLocaleString('en-IN')}/month at ${returnRate}% return. Lasts: ${durText}. Breakeven rate: ${breakeven.toFixed(1)}%.`,
+          fear_type: fearType,
+          context: 'swp_calculator',
+          conversation_history: [],
+        })
+        setKinuInsight(data.reply)
+      } catch {
+        setKinuInsight(null)
+      } finally {
+        setKinuLoading(false)
+      }
+    }, 1500)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [corpus, monthlyWithdraw, returnRate, fearType])
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
       {/* Sliders */}
@@ -346,6 +415,27 @@ function SWPTab() {
         <p className="font-sans text-xs text-white/40">
           Any annual return above {breakeven.toFixed(1)}% means your corpus lasts forever. Below it, you're drawing down principal.
         </p>
+      </div>
+
+      {/* KINU insight for SWP */}
+      <div className="rounded-3xl p-5 border mb-6" style={{ background: 'rgba(192,241,142,0.03)', borderColor: 'rgba(192,241,142,0.12)' }}>
+        <div className="flex items-start gap-3">
+          <Zap className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+          {kinuLoading ? (
+            <div className="flex-1 space-y-2 py-0.5">
+              <div className="h-3 w-full rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="h-2.5 w-3/4 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+          ) : (
+            <p className="font-sans text-sm text-white/50 leading-relaxed">
+              {kinuInsight
+                ?? (isInfinite
+                  ? `Your withdrawal rate is sustainable — your corpus generates enough returns to fund ₹${monthlyWithdraw.toLocaleString('en-IN')}/month indefinitely. This is the dream.`
+                  : `At ${returnRate}% return, your corpus runs out in ${yearsLast} years. Consider either reducing monthly withdrawal or targeting a higher return.`
+                )}
+            </p>
+          )}
+        </div>
       </div>
 
       <p className="font-sans text-[10px] text-white/20 text-center">

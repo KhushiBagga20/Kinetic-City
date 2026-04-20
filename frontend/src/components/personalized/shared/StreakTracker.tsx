@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Flame } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
+import { generateKinuChat } from '../../../lib/kinuAI'
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -16,11 +17,13 @@ function getMotivation(days: number): string {
 
 export default function StreakTracker() {
   const streakDays = useAppStore(s => s.streakDays)
+  const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const updateStreak = useAppStore(s => s.updateStreak)
   const acknowledgedStreakMilestones = useAppStore(s => s.acknowledgedStreakMilestones)
   const acknowledgeMilestone = useAppStore(s => s.acknowledgeMilestone)
   const [showMilestoneToast, setShowMilestoneToast] = useState(false)
   const [milestoneReached, setMilestoneReached] = useState(0)
+  const [milestoneMsg, setMilestoneMsg] = useState<Record<number, string>>({})
 
   useEffect(() => {
     updateStreak()
@@ -38,6 +41,19 @@ export default function StreakTracker() {
       return () => clearTimeout(timer)
     }
   }, [streakDays, acknowledgedStreakMilestones, acknowledgeMilestone])
+
+  // Generate AI milestone message async — show static fallback immediately, upgrade when ready
+  useEffect(() => {
+    if (!milestoneReached || milestoneMsg[milestoneReached]) return
+    generateKinuChat({
+      message: `User just hit a ${milestoneReached}-day streak on KINETIC. Fear type: ${fearType}. Give one punchy celebratory sentence (max 12 words).`,
+      fear_type: fearType,
+      context: 'streak_milestone',
+      conversation_history: [],
+    })
+    .then(d => setMilestoneMsg(prev => ({ ...prev, [milestoneReached]: d.reply })))
+    .catch(() => {})
+  }, [milestoneReached, fearType])
 
 
   // Monday-first index: Mon=0, Tue=1, ..., Sun=6
@@ -81,7 +97,10 @@ export default function StreakTracker() {
           >
             <Flame className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span className="font-display text-[13px] text-white">
-              <span style={{ color: 'var(--accent)' }}>{milestoneReached} Day</span> Streak Milestone! 🔥
+              {milestoneMsg[milestoneReached]
+                ? milestoneMsg[milestoneReached]
+                : <><span style={{ color: 'var(--accent)' }}>{milestoneReached} Day</span> Streak Milestone! 🔥</>
+              }
             </span>
           </motion.div>
         )}
