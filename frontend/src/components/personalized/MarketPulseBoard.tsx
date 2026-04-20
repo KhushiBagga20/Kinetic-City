@@ -39,9 +39,9 @@ function Sparkline({ data, up }: { data: number[]; up: boolean }) {
 /* ── Price formatter ─────────────────────────────────────────────────────── */
 
 function fmtPrice(v: string | undefined): string {
-  if (!v) return '—'
+  if (!v || v === 'nan' || v === 'NaN' || v === 'undefined') return '—'
   const n = parseFloat(v)
-  if (isNaN(n)) return v
+  if (isNaN(n) || !isFinite(n)) return '—'
   return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
@@ -77,11 +77,23 @@ export default function MarketPulseBoard() {
   }, [quotes, watchlist])
 
   // REST polling fallback when WS is disconnected
+  // Polls the selected token AND all search-added (non-default) tokens
   useEffect(() => {
-    if (connected || !selectedToken) return
-    const sel = watchlist.find(w => w.token === selectedToken)
-    if (!sel) return
-    const poll = setInterval(() => { fetchQuote(sel.exch, sel.token) }, 5000)
+    if (connected) return
+
+    // Collect tokens we need to poll: selected + any non-default watchlist items
+    const defaultTokens = new Set(DEFAULT_WATCHLIST.map(w => w.token))
+    const extraItems = watchlist.filter(w => !defaultTokens.has(w.token))
+
+    const poll = setInterval(() => {
+      // Poll selected token
+      const sel = watchlist.find(w => w.token === selectedToken)
+      if (sel) fetchQuote(sel.exch, sel.token)
+      // Poll all search-added stocks so their prices stay updated
+      for (const item of extraItems) {
+        if (item.token !== selectedToken) fetchQuote(item.exch, item.token)
+      }
+    }, 5000)
     return () => clearInterval(poll)
   }, [connected, selectedToken, watchlist, fetchQuote])
 
@@ -104,19 +116,28 @@ export default function MarketPulseBoard() {
       setWatchlist(prev => [...prev, { symbol: result.tsym, token: result.token, exch: result.exch, type: 'stock' }])
       setSelectedToken(result.token)
     }
+    // Immediately fetch quote so price + detail appear right away
+    fetchQuote(result.exch, result.token)
     setSearchQuery(''); setSearchResults([]); setShowSearch(false)
-  }, [watchlist])
+  }, [watchlist, fetchQuote])
 
   const selectedItem = useMemo(() => watchlist.find(w => w.token === selectedToken), [watchlist, selectedToken])
+
+  // Filter existing watchlist by search query (instant, client-side)
+  const filteredWatchlist = useMemo(() => {
+    if (!searchQuery.trim()) return watchlist
+    const q = searchQuery.trim().toLowerCase()
+    return watchlist.filter(w => w.symbol.toLowerCase().includes(q))
+  }, [watchlist, searchQuery])
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
       className="rounded-3xl border overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
 
-      <div className="flex flex-col md:flex-row" style={{ minHeight: 520 }}>
+      <div className="flex flex-col md:flex-row" style={{ minHeight: 680 }}>
 
         {/* ── LEFT PANEL — Watchlist ──────────────────────────────────────── */}
-        <div className={`flex-none md:w-72 border-r ${showMobileDetail ? 'hidden md:block' : ''}`}
+        <div className={`flex-none md:w-72 border-r flex flex-col ${showMobileDetail ? 'hidden md:block' : ''}`}
           style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
 
           {/* Header */}
@@ -187,8 +208,14 @@ export default function MarketPulseBoard() {
           </div>
 
           {/* Watchlist items */}
-          <div className="px-2 pb-3 overflow-y-auto" style={{ maxHeight: 420, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}>
-            {watchlist.map((item, i) => {
+          <div className="px-2 pb-3 overflow-y-auto flex-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}>
+            {filteredWatchlist.length === 0 && searchQuery.trim() ? (
+              <div className="px-3 py-4 text-center">
+                <p className="text-[12px] text-white/25">No matches in watchlist</p>
+                <p className="text-[10px] text-white/15 mt-1">Results above will add a new stock</p>
+              </div>
+            ) : null}
+            {filteredWatchlist.map((item, i) => {
               const q = quotes[item.token]
               const lp = q?.lp
               const pc = q?.pc
@@ -219,7 +246,10 @@ export default function MarketPulseBoard() {
                         <div className="text-right">
                           <p className="text-[12px] font-mono tabular-nums text-white/80">{fmtPrice(lp)}</p>
                           <p className="text-[10px] font-mono tabular-nums" style={{ color: isUp ? '#1D9E75' : '#E24B4A' }}>
-                            {isUp ? '+' : ''}{parseFloat(pc || '0').toFixed(2)}%
+                            {(() => {
+                              const pct = parseFloat(pc || '0')
+                              return (isNaN(pct) || !isFinite(pct)) ? '0.00%' : `${isUp ? '+' : ''}${pct.toFixed(2)}%`
+                            })()}
                           </p>
                         </div>
                       </>

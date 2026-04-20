@@ -75,11 +75,32 @@ SUBSCRIBE_KEYS = "NSE|11630#NSE|26000#NSE|2885#NSE|1594#NSE|1333#NSE|11536#NSE|4
 def yf_get_quote(token: str) -> dict:
     """Get current quote from Yahoo Finance for a given Shoonya token.
     Uses 5-day daily history to get accurate previous trading day close.
+    Also handles direct Yahoo tickers (e.g. SBIN.NS) from search results.
     """
     import yfinance as yf
+    import math
     ticker_sym = SHOONYA_TO_YAHOO.get(token)
     if not ticker_sym:
-        return {}
+        # If it looks like a Yahoo ticker already (has . or ^), use it directly
+        if '.' in token or token.startswith('^'):
+            ticker_sym = token
+        else:
+            return {}
+
+    def safe_float(v, fallback=0.0) -> float:
+        """Convert to float, returning fallback for None/NaN/Inf."""
+        try:
+            f = float(v)
+            return fallback if (math.isnan(f) or math.isinf(f)) else f
+        except (TypeError, ValueError):
+            return fallback
+
+    def safe_str(v, fallback='0', decimals=2) -> str:
+        f = safe_float(v, None)
+        if f is None:
+            return fallback
+        return str(round(f, decimals))
+
     try:
         t = yf.Ticker(ticker_sym)
 
@@ -88,28 +109,44 @@ def yf_get_quote(token: str) -> dict:
         if len(hist) < 2:
             return {}
 
-        today = hist.iloc[-1]
-        prev  = hist.iloc[-2]
-        lp         = float(today['Close'])
-        prev_close = float(prev['Close'])
+        # NaN guard: yfinance returns NaN Close for .NS stocks when the
+        # latest daily candle is incomplete / market just closed.  Fall back
+        # to the previous finalised row when that happens.
+        last_close = safe_float(hist.iloc[-1]['Close'], 0.0)
+        if last_close <= 0 and len(hist) >= 3:
+            # Last row is NaN/0 → use second-to-last as "today"
+            last_close = safe_float(hist.iloc[-2]['Close'], 0.0)
+            prev_close = safe_float(hist.iloc[-3]['Close'], last_close)
+            today = hist.iloc[-2]
+        else:
+            prev_close = safe_float(hist.iloc[-2]['Close'], last_close)
+            today = hist.iloc[-1]
+
+        lp = last_close
+
+        # Skip entire quote if price is still zero/invalid after fallback
+        if lp <= 0 or prev_close <= 0:
+            return {}
+
         pc = round(((lp - prev_close) / prev_close) * 100, 2)
 
         # For intraday OHLC use fast_info (covers today's session)
         info = t.fast_info
-        open_price = float(info.open or today['Open'])
-        day_high   = float(info.day_high or today['High'])
-        day_low    = float(info.day_low or today['Low'])
+        open_price = safe_float(info.open,     safe_float(today['Open'],  lp))
+        day_high   = safe_float(info.day_high,  safe_float(today['High'],  lp))
+        day_low    = safe_float(info.day_low,   safe_float(today['Low'],   lp))
+        avg_vol    = safe_float(getattr(info, 'three_month_average_volume', 0), 0)
 
         return {
             'stat': 'Ok',
             'tk': token,
-            'lp': str(round(lp, 2)),
-            'pc': str(pc),
-            'o':  str(round(open_price, 2)),
-            'h':  str(round(day_high, 2)),
-            'l':  str(round(day_low, 2)),
-            'c':  str(round(prev_close, 2)),
-            'v':  str(int(info.three_month_average_volume or 0)),
+            'lp': safe_str(lp),
+            'pc': safe_str(pc),
+            'o':  safe_str(open_price),
+            'h':  safe_str(day_high),
+            'l':  safe_str(day_low),
+            'c':  safe_str(prev_close),
+            'v':  str(int(avg_vol)),
             'source': 'yfinance',
         }
     except Exception as e:
@@ -120,11 +157,15 @@ def yf_get_quote(token: str) -> dict:
 def yf_get_candles(token: str, interval: str, days: int) -> list:
     """Get OHLCV candles from Yahoo Finance.
     Returns timestamps as Unix epoch in SECONDS (not milliseconds).
+    Also handles direct Yahoo tickers (e.g. SBIN.NS) from search results.
     """
     import yfinance as yf
     ticker_sym = SHOONYA_TO_YAHOO.get(token)
     if not ticker_sym:
-        return []
+        if '.' in token or token.startswith('^'):
+            ticker_sym = token
+        else:
+            return []
     try:
         # Map Shoonya interval (minutes) to yfinance interval string
         interval_map = {
@@ -218,7 +259,10 @@ def calculate_period_change(token: str, period: str) -> float:
     import yfinance as yf
     ticker_sym = SHOONYA_TO_YAHOO.get(token)
     if not ticker_sym:
-        return 0.0
+        if '.' in token or token.startswith('^'):
+            ticker_sym = token
+        else:
+            return 0.0
 
     # Map frontend period label → (yf_period, yf_interval)
     period_map = {

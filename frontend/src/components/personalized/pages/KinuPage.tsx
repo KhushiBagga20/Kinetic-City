@@ -1,8 +1,35 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRef, useEffect } from 'react'
 import { Send, Mic, MicOff, ArrowRight } from 'lucide-react'
 import { useAppStore, type FearType } from '../../../store/useAppStore'
 import { useKinu } from '../../../hooks/useKinu'
+
+const SUGGESTED: Record<FearType, string[]> = {
+  loss: [
+    'What happens if the market crashes 50%?',
+    'Is ₹500/month SIP actually safe?',
+    'Show me how long crashes take to recover',
+    'What is the worst case for my investment?',
+  ],
+  jargon: [
+    'What is NAV in simple terms?',
+    'Explain SIP like I am 15',
+    'What is the difference between CAGR and XIRR?',
+    'How does an index fund actually work?',
+  ],
+  scam: [
+    'How do I verify a fund is SEBI registered?',
+    'Can my money disappear in an index fund?',
+    'What is the paper trail for my investment?',
+    'How is a real fund different from a scam?',
+  ],
+  trust: [
+    'Prove index funds beat active funds',
+    'How is Nifty 50 composition decided?',
+    'What happens if the AMC shuts down?',
+    'Show me the math behind 14% CAGR',
+  ],
+}
 
 const FIRST_MESSAGES: Record<FearType, string> = {
   loss: "Hey! I know the market feels risky. Tell me what's specifically worrying you — and I'll show you real numbers that put it in perspective.",
@@ -16,7 +43,7 @@ export default function KinuPage() {
   const rawName = useAppStore(s => s.userName)
   const userName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : 'there'
 
-  const greeting = FIRST_MESSAGES[fearType].replace('{name}', userName)
+  const greeting = FIRST_MESSAGES[fearType as FearType].replace('{name}', userName)
   const { messages, input, setInput, isTyping, isListening, voiceError, sendMessage, startListening, stopListening } = useKinu(greeting)
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -120,6 +147,44 @@ export default function KinuPage() {
             </div>
           </motion.div>
         )}
+
+        {/* Suggested question chips — shown only on first load */}
+        <AnimatePresence>
+          {messages.length === 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="flex flex-wrap gap-2 mt-2 mb-4"
+            >
+              {(SUGGESTED[fearType as FearType] ?? SUGGESTED.loss).map(q => (
+                <button
+                  key={q}
+                  onClick={() => sendMessage(q)}
+                  className="px-3 py-2 rounded-xl text-[12px] font-sans cursor-pointer transition-all duration-75"
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.55)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.8)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.55)'
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Voice listening indicator */}

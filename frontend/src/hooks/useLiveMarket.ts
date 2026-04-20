@@ -185,7 +185,11 @@ export function useLiveMarket() {
         const params = new URLSearchParams({ exchange, token })
         const resp = await fetch(`${API_BASE}/api/shoonya/quote?${params}`)
         const json = await resp.json()
-        return json.error ? null : json
+        if (json.error) return null
+        // Merge fetched quote into state so watchlist items show live data
+        const tk = json.tk || token
+        setQuotes(prev => ({ ...prev, [tk]: { ...prev[tk], ...json } }))
+        return json
       } catch {
         return null
       }

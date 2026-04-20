@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { fetchMarketNews, getFearFraming, type NewsItem } from '../../lib/newsAPI'
 import { SkeletonCard } from '../Skeleton'
+import { generateKinuChat } from '../../lib/kinuAI'
 
 /* ── Category config ──────────────────────────────────────────────────────── */
 
@@ -81,6 +82,29 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   const ft = fearType || useAppStore.getState().fearType || 'loss'
+
+  // AI frame cache — lazy, generated on hover, never on mount
+  const [aiFrames, setAiFrames] = useState<Map<string, string>>(new Map())
+  const [loadingFrames, setLoadingFrames] = useState<Set<string>>(new Set())
+
+  async function generateFrame(item: NewsItem) {
+    const key = item.id || item.title
+    if (aiFrames.has(key) || loadingFrames.has(key)) return
+    setLoadingFrames(prev => new Set([...prev, key]))
+    try {
+      const data = await generateKinuChat({
+        message: `News: "${item.title}". In one sentence, what does this mean for a ${ft} investor?`,
+        fear_type: ft,
+        context: 'news_framing',
+        conversation_history: [],
+      })
+      setAiFrames(prev => new Map([...prev, [key, data.reply]]))
+    } catch {
+      setAiFrames(prev => new Map([...prev, [key, item.impact || '']]))
+    } finally {
+      setLoadingFrames(prev => { const s = new Set(prev); s.delete(key); return s })
+    }
+  }
 
   const doFetch = useCallback(async () => {
     setRefreshing(true)
@@ -239,7 +263,7 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
                     borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
                     background: isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
                   }}
-                  onMouseEnter={() => setHoveredIdx(i)}
+                  onMouseEnter={() => { setHoveredIdx(i); generateFrame(item) }}
                   onMouseLeave={() => setHoveredIdx(null)}
                 >
                   {/* Row 1: dot + title + time */}
@@ -301,17 +325,29 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
                     </motion.span>
                   </div>
 
-                  {/* Fear-type framing */}
-                  {isHovered && fearFrame !== item.impact && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="font-sans text-[11px] mt-1.5 ml-5"
-                      style={{ color: ftColor, opacity: 0.7 }}
-                    >
-                      {fearFrame}
-                    </motion.p>
-                  )}
+                  {/* Fear-type framing — AI-generated lazily on hover */}
+                  {isHovered && (() => {
+                    const key = item.id || item.title
+                    const aiText = aiFrames.get(key)
+                    const isLoading = loadingFrames.has(key)
+                    if (isLoading) return (
+                      <div className="mt-1.5 ml-5">
+                        <div className="h-2.5 w-3/4 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      </div>
+                    )
+                    const displayText = aiText ?? fearFrame
+                    if (!displayText || displayText === item.impact) return null
+                    return (
+                      <motion.p
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="font-sans text-[11px] mt-1.5 ml-5"
+                        style={{ color: ftColor, opacity: 0.7 }}
+                      >
+                        {displayText}
+                      </motion.p>
+                    )
+                  })()}
                 </motion.div>
               )
             })}

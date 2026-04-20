@@ -21,6 +21,7 @@ export default function ModuleJourney() {
   const [kinuLoading, setKinuLoading] = useState(false)
   const [completing, setCompleting] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [completionReaction, setCompletionReaction] = useState<string | null>(null)
 
   useEffect(() => {
     if (!activeModuleId) navigate('/dashboard/learn', { replace: true })
@@ -76,6 +77,16 @@ export default function ModuleJourney() {
     if (!isCompleted) {
       completeModule(currentModule.id, (currentModule as any).fearProgressIncrement)
       setShowCelebration(true)
+      // Generate KINU completion reaction in background — overlay shows static fallback until ready
+      setCompletionReaction(null)
+      generateKinuChat({
+        message: `User just completed the module '${currentModule.title}'. Fear type: ${fearType}. Give one short (max 2 sentences) celebratory and insightful message.`,
+        fear_type: fearType,
+        context: 'module_completion',
+        conversation_history: [],
+      })
+      .then(d => setCompletionReaction(d.reply))
+      .catch(() => setCompletionReaction("One module closer to fearless. Keep this momentum going."))
     } else {
       navigate('/dashboard/learn')
     }
@@ -335,6 +346,17 @@ export default function ModuleJourney() {
             >
               +50 XP
             </motion.div>
+
+            {/* KINU completion message */}
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="font-sans text-sm max-w-xs text-center mb-5 leading-relaxed"
+              style={{ color: 'rgba(255,255,255,0.55)' }}
+            >
+              {completionReaction ?? 'One module closer to fearless. Keep this momentum going.'}
+            </motion.p>
 
             <p className="font-sans text-white/40 text-[13px]">Tap anywhere to continue</p>
           </motion.div>

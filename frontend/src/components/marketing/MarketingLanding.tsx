@@ -285,11 +285,20 @@ function HowItWorksStep({ step, index }: { step: typeof STEPS[0]; index: number 
   )
 }
 
+// ── DEMO PROFILES ────────────────────────────────────────────────────────────
+
+const DEMO_PROFILES = [
+  { id: 'loss',   label: 'Loss Avoider',         color: '#E24B4A' },
+  { id: 'jargon', label: 'Clarity Seeker',        color: '#378ADD' },
+  { id: 'scam',   label: 'Pattern Detector',      color: '#EF9F27' },
+  { id: 'trust',  label: 'Independence Guardian', color: '#1D9E75' },
+]
+
 // ── FINAL CTA WORDS ──────────────────────────────────────────────────────────
 
 const CTA_WORDS = ['Every month', 'you wait', 'costs you', 'something', "you can't", 'get back.']
 
-function FinalCTASection({ onStart }: { onStart: () => void }) {
+function FinalCTASection({ onStart, onDemo }: { onStart: () => void; onDemo: (fearId: string) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-100px' })
   return (
@@ -328,6 +337,35 @@ function FinalCTASection({ onStart }: { onStart: () => void }) {
             Start now. It's free. No sign-up required yet →
           </button>
           <p className="font-sans text-xs text-white/25 mt-4">Takes 60 seconds. No financial advice. No spam.</p>
+
+          {/* Demo mode */}
+          <p className="text-[11px] text-white/20 text-center mt-4 mb-2">
+            or jump straight in →
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {DEMO_PROFILES.map(p => (
+              <button
+                key={p.id}
+                onClick={() => onDemo(p.id)}
+                className="px-4 py-2 rounded-full text-[12px] font-medium transition-all duration-100"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.4)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = p.color
+                  e.currentTarget.style.color = p.color
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -357,6 +395,13 @@ export default function MarketingLanding() {
     setView('quiz')
     navigate('/start')
   }, [setView, navigate])
+
+  function handleDemo(fearId: string) {
+    useAppStore.getState().setFearProfile(fearId as any, 'generic')
+    useAppStore.getState().setUserProfile('Demo User', '', '')
+    setView('dashboard')
+    navigate('/dashboard/home')
+  }
 
   const statsRef = useRef<HTMLDivElement>(null)
 
@@ -484,7 +529,7 @@ export default function MarketingLanding() {
       </section>
 
       {/* ── SECTION 6: FINAL CTA ────────────────────────────────────── */}
-      <FinalCTASection onStart={handleStart} />
+      <FinalCTASection onStart={handleStart} onDemo={handleDemo} />
 
       {/* ── FOOTER ──────────────────────────────────────────────────── */}
       <footer className="border-t px-6 md:px-10 py-10" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#00161b' }}>

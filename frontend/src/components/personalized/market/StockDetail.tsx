@@ -8,18 +8,18 @@ import CandleChart from './CandleChart'
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000'
 
 function formatIndian(val: string | undefined): string {
-  if (!val) return '—'
+  if (!val || val === 'nan' || val === 'NaN' || val === 'undefined') return '—'
   const n = parseFloat(val)
-  if (isNaN(n)) return val
+  if (isNaN(n) || !isFinite(n)) return '—'
   if (n >= 1_00_00_000) return `${(n / 1_00_00_000).toFixed(2)}Cr`
   if (n >= 1_00_000) return `${(n / 1_00_000).toFixed(2)}L`
   return n.toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
 function formatPrice(val: string | undefined): string {
-  if (!val) return '—'
+  if (!val || val === 'nan' || val === 'NaN' || val === 'undefined') return '—'
   const n = parseFloat(val)
-  if (isNaN(n)) return val
+  if (isNaN(n) || !isFinite(n)) return '—'
   return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
@@ -61,7 +61,7 @@ export default function StockDetail({ symbol, token, exchange, quote, fetchCandl
     setKinuLoading(true)
     try {
       const prompt = `In 2 sentences, what should a ${fearType || 'cautious'} investor know about ${symbol} right now? Current price ₹${lp}, change ${pc || '0'}% today.`
-      const resp = await fetch(`${API_BASE}/api/mentor/ask`, {
+      const resp = await fetch(`${API_BASE}/api/mentor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: prompt, fear_type: fearType || 'loss', metaphor_style: 'professional' }),

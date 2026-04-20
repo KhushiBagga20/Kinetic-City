@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
+import { isFirebaseConfigured } from '../../lib/firebase'
 import { X, ArrowRight, Loader2 } from 'lucide-react'
 
 interface LoginModalProps {
@@ -14,14 +15,51 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const userName = useAppStore(s => s.userName)
   const fearType = useAppStore(s => s.fearType)
   const updateStreak = useAppStore(s => s.updateStreak)
+  const setView = useAppStore(s => s.setView)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
 
   // Check if this user has a persisted session (completed quiz before)
   const hasPreviousSession = !!fearType && !!userName
+
+  // ── Google Sign-In handler ───────────────────────────────────────────────
+  async function handleGoogleSignIn() {
+    if (!isFirebaseConfigured) return
+    setGoogleLoading(true)
+    setError('')
+    try {
+      const { signInWithGoogle } = await import('../../lib/firebase')
+      const user = await signInWithGoogle()
+      const displayName = user.displayName || 'Investor'
+      useAppStore.getState().setUserProfile(displayName, user.email || '', '')
+      useAppStore.setState({
+        isAuthenticated: true,
+        userId: user.uid,
+        userEmail: user.email || '',
+        userName: displayName,
+      })
+      updateStreak()
+      setGoogleLoading(false)
+      onClose()
+      // Navigate based on whether user has a fear profile
+      const currentFearType = useAppStore.getState().fearType
+      if (currentFearType) {
+        setView('dashboard')
+        navigate('/dashboard/home')
+      } else {
+        navigate('/start')
+      }
+    } catch (err: any) {
+      setGoogleLoading(false)
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError('Google sign-in failed. Try email login instead.')
+      }
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -34,9 +72,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setError('')
 
     // FIREBASE SYNC OVERRIDE ───────────────────────────────────────────────
-    const { isFirebaseConfigured, auth } = await import('../../lib/firebase')
+    const { isFirebaseConfigured: fbConfigured, auth } = await import('../../lib/firebase')
     
-    if (isFirebaseConfigured && auth) {
+    if (fbConfigured && auth) {
       try {
         const { signInWithEmailAndPassword } = await import('firebase/auth')
         await signInWithEmailAndPassword(auth, email, password)
@@ -58,6 +96,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     // If user has a previous session (persisted in localStorage), let them in
     if (hasPreviousSession) {
+      useAppStore.setState({
+        isAuthenticated: true,
+        userId: useAppStore.getState().userId || 'local_' + Math.random().toString(36).substring(2, 10),
+        userEmail: email.trim() || useAppStore.getState().userEmail,
+      })
       updateStreak()
       setLoading(false)
       onClose()
@@ -150,6 +193,44 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       <p className="font-sans text-[10px] text-white/30">Session found in this browser</p>
                     </div>
                   </motion.div>
+                )}
+
+                {/* ── Google Sign-In button ──────────────────────────────── */}
+                {isFirebaseConfigured && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleLoading}
+                      className="w-full h-12 rounded-2xl flex items-center justify-center gap-3 transition-[background-color] duration-150 disabled:opacity-50 mb-0"
+                      style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.09)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-white/50" />
+                      ) : (
+                        <>
+                          <svg width="18" height="18" viewBox="0 0 24 24" className="shrink-0">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          </svg>
+                          <span className="text-[14px] font-medium text-white/75">Continue with Google</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="flex items-center gap-3 my-5">
+                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <span className="text-[11px] text-white/25 font-sans">or continue with email</span>
+                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    </div>
+                  </>
                 )}
 
                 {/* Form */}

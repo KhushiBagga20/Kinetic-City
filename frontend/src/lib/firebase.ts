@@ -31,3 +31,16 @@ export const getVertexClient = async () => {
     return null;
   }
 };
+
+// Google Sign-In helper
+// NOTE: Add localhost to Firebase Console authorized domains:
+// Console → Authentication → Settings → Authorized domains
+export async function signInWithGoogle() {
+  if (!auth) throw new Error('Firebase not configured')
+  const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth')
+  const provider = new GoogleAuthProvider()
+  provider.addScope('email')
+  provider.addScope('profile')
+  const result = await signInWithPopup(auth, provider)
+  return result.user
+}

@@ -3,6 +3,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Chart, registerables } from 'chart.js'
 import { formatINR } from '../../../lib/formatINR'
 import { TrendingUp, Landmark, PiggyBank, ArrowRight, Info } from 'lucide-react'
+import { generateKinuChat } from '../../../lib/kinuAI'
+import { useAppStore } from '../../../store/useAppStore'
 
 Chart.register(...registerables)
 
@@ -28,8 +30,12 @@ function lumpsumFV(principal: number, annualRate: number, years: number): number
 /* ── Component ───────────────────────────────────────────────────────────── */
 
 export default function ComparePage() {
+  const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const [monthly, setMonthly] = useState(5000)
   const [years, setYears] = useState(10)
+  const [verdict, setVerdict] = useState<string | null>(null)
+  const [verdictLoading, setVerdictLoading] = useState(false)
+  const verdictDebounceRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart | null>(null)
@@ -104,6 +110,31 @@ export default function ComparePage() {
 
   useEffect(() => { renderChart() }, [renderChart])
   useEffect(() => { return () => { chartInstance.current?.destroy() } }, [])
+
+  // Debounced KINU verdict
+  const niftySIPReal = useMemo(() => sipFV(monthly, NIFTY_CAGR - INFLATION, years), [monthly, years])
+  
+  useEffect(() => {
+    if (verdictDebounceRef.current) clearTimeout(verdictDebounceRef.current)
+    verdictDebounceRef.current = setTimeout(async () => {
+      setVerdictLoading(true)
+      try {
+        const prompt = `Compare page results: ₹${monthly.toLocaleString('en-IN')}/month SIP for ${years} years. Nifty SIP corpus: ₹${Math.round(niftySIP).toLocaleString('en-IN')}. FD corpus: ₹${Math.round(fdNominal).toLocaleString('en-IN')}. Real value after inflation - SIP: ₹${Math.round(niftySIPReal).toLocaleString('en-IN')}, FD: ₹${Math.round(fdReal).toLocaleString('en-IN')}. Gap: ₹${Math.round(niftySIP - fdNominal).toLocaleString('en-IN')} more with SIP. Give a 2-sentence verdict tailored to a ${fearType} investor.`
+        const data = await generateKinuChat({
+          message: prompt,
+          fear_type: fearType,
+          context: 'compare_calculator',
+          conversation_history: [],
+        })
+        setVerdict(data.reply)
+      } catch {
+        setVerdict(null)
+      } finally {
+        setVerdictLoading(false)
+      }
+    }, 1500)
+    return () => { if (verdictDebounceRef.current) clearTimeout(verdictDebounceRef.current) }
+  }, [monthly, years, fearType, niftySIP, fdNominal, fdReal, niftySIPReal])
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
@@ -210,6 +241,28 @@ export default function ComparePage() {
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* KINU verdict card */}
+      <div className="rounded-3xl p-5 border mb-6" style={{ background: 'rgba(192,241,142,0.03)', borderColor: 'rgba(192,241,142,0.1)' }}>
+        <div className="flex items-start gap-3">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(192,241,142,0.12)' }}>
+            <span className="font-display font-bold text-[11px]" style={{ color: 'var(--accent)' }}>K</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] font-sans text-white/25 uppercase tracking-wider mb-2">KINU's verdict</p>
+            {verdictLoading ? (
+              <div className="space-y-2 py-0.5">
+                <div className="h-3 w-full rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                <div className="h-2.5 w-3/4 rounded-md animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              </div>
+            ) : (
+              <p className="font-sans text-sm text-white/50 leading-relaxed">
+                {verdict ?? insightText}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Disclaimer */}
       <p className="font-sans text-[10px] text-white/20 text-center">
