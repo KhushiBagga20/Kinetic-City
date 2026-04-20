@@ -59,31 +59,14 @@ export default function SimulationPage() {
   const chartInstance = useRef<Chart | null>(null)
   const workerRef = useRef<Worker | null>(null)
 
-  // Animated counters
-  const investedCounter = useMotionValue(0)
-  const medianCounter = useMotionValue(0)
-  const worstCounter = useMotionValue(0)
-  const [investedDisplay, setInvestedDisplay] = useState('₹0')
-  const [medianDisplay, setMedianDisplay] = useState('₹0')
-  const [worstDisplay, setWorstDisplay] = useState('₹0')
-
-  useEffect(() => {
-    const unsub1 = investedCounter.on('change', v => setInvestedDisplay(formatINR(v)))
-    const unsub2 = medianCounter.on('change', v => setMedianDisplay(formatINR(v)))
-    const unsub3 = worstCounter.on('change', v => setWorstDisplay(formatINR(v)))
-    return () => { unsub1(); unsub2(); unsub3() }
-  }, [investedCounter, medianCounter, worstCounter])
+  const [committedResult, setCommittedResult] = useState<{
+    finalP10: number; finalP50: number; finalP90: number; totalInvested: number;
+  } | null>(null)
 
   // Calculate quick stats
   const totalInvested = monthly * years * 12
   const quickP50 = totalInvested * Math.pow(1 + cagr / 100, years) * 0.55
   const quickP10 = quickP50 * 0.55
-
-  useEffect(() => {
-    animate(investedCounter, totalInvested, { duration: 0.8 })
-    animate(medianCounter, quickP50, { duration: 0.8 })
-    animate(worstCounter, quickP10, { duration: 0.8 })
-  }, [monthly, years, cagr, totalInvested, quickP50, quickP10, investedCounter, medianCounter, worstCounter])
 
   // ── Chart rendering ─────────────────────────────────────────────────────
   const renderChart = useCallback((data: typeof result) => {
@@ -168,15 +151,18 @@ export default function SimulationPage() {
           p90: data.finalP90,
           totalInvested: data.totalInvested,
         })
-        animate(investedCounter, data.totalInvested, { duration: 1 })
-        animate(medianCounter, data.finalP50, { duration: 1 })
-        animate(worstCounter, data.finalP10, { duration: 1 })
+        setCommittedResult({
+          finalP10: data.finalP10,
+          finalP50: data.finalP50,
+          finalP90: data.finalP90,
+          totalInvested: data.totalInvested,
+        })
         renderChart(data)
       }, 1200) // simulate loading time
     }
 
     worker.postMessage({ monthlyAmount: monthly, years, cagr: cagr / 100 })
-  }, [monthly, years, cagr, setStoreMonthly, setStoreYears, setSimulationResult, renderChart, investedCounter, medianCounter, worstCounter])
+  }, [monthly, years, cagr, setStoreMonthly, setStoreYears, setSimulationResult, renderChart])
 
   useEffect(() => {
     return () => { workerRef.current?.terminate(); chartInstance.current?.destroy() }
@@ -240,16 +226,30 @@ export default function SimulationPage() {
             <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-1">Total invested</p>
-                <p className="font-display font-semibold text-base text-white">{investedDisplay}</p>
+                {committedResult ? (
+                  <p className="font-display font-semibold text-base text-white">{formatINR(committedResult.totalInvested)}</p>
+                ) : (
+                  <p className="font-sans text-[10px] text-white/30 italic">Run simulation to see results</p>
+                )}
               </div>
               <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-1">Median outcome</p>
-                <p className="font-display font-semibold text-base" style={{ color: 'var(--teal)' }}>{medianDisplay}</p>
+                {committedResult ? (
+                  <p className="font-display font-semibold text-base" style={{ color: 'var(--teal)' }}>{formatINR(committedResult.finalP50)}</p>
+                ) : (
+                  <p className="font-sans text-[10px] text-white/30 italic">Run simulation to see results</p>
+                )}
               </div>
               <div className="rounded-2xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-1">Worst case (p10)</p>
-                <p className="font-display font-semibold text-base" style={{ color: 'var(--danger)' }}>{worstDisplay}</p>
-                <p className="text-[9px] font-sans text-white/20 mt-1">Historically recovered within 14 months</p>
+                {committedResult ? (
+                  <>
+                    <p className="font-display font-semibold text-base" style={{ color: 'var(--danger)' }}>{formatINR(committedResult.finalP10)}</p>
+                    <p className="text-[9px] font-sans text-white/20 mt-1">Historically recovered within 14 months</p>
+                  </>
+                ) : (
+                  <p className="font-sans text-[10px] text-white/30 italic">Run simulation to see results</p>
+                )}
               </div>
             </div>
 
@@ -287,15 +287,7 @@ export default function SimulationPage() {
               </div>
             )}
 
-            {/* Fear personalization */}
-            <div
-              className="rounded-2xl p-4 border mt-6"
-              style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
-            >
-              <p className="font-sans text-xs text-white/40 leading-relaxed italic">
-                {FEAR_INSIGHTS[fearType]}
-              </p>
-            </div>
+
 
             {/* AI personalised quote */}
             <FearQuote context="simulation" variant="card" />
@@ -368,27 +360,52 @@ export default function SimulationPage() {
           </motion.div>
 
           {/* What this means cards */}
-          {hasRun && result && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4"
-            >
-              <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">If everything goes well</p>
-                <p className="font-display font-semibold text-lg" style={{ color: 'var(--teal)' }}>{formatINR(result.finalP90)}</p>
-              </div>
-              <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">Most likely outcome</p>
-                <p className="font-display font-semibold text-lg" style={{ color: 'var(--blue)' }}>{formatINR(result.finalP50)}</p>
-              </div>
-              <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderBottom: '2px solid var(--danger)' }}>
-                <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">If markets struggle</p>
-                <p className="font-display font-semibold text-lg" style={{ color: 'var(--danger)' }}>{formatINR(result.finalP10)}</p>
-                <p className="text-[9px] font-sans text-white/20 mt-1">Still recovered historically</p>
-              </div>
-            </motion.div>
-          )}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">If everything goes well</p>
+              {committedResult ? (
+                <p className="font-display font-semibold text-lg" style={{ color: 'var(--teal)' }}>{formatINR(committedResult.finalP90)}</p>
+              ) : (
+                <p className="font-sans text-[11px] text-white/30 italic">Run simulation to see results</p>
+              )}
+            </div>
+            <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">Most likely outcome</p>
+              {committedResult ? (
+                <p className="font-display font-semibold text-lg" style={{ color: 'var(--blue)' }}>{formatINR(committedResult.finalP50)}</p>
+              ) : (
+                <p className="font-sans text-[11px] text-white/30 italic">Run simulation to see results</p>
+              )}
+            </div>
+            <div className="rounded-2xl p-5 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)', borderBottom: '2px solid var(--danger)' }}>
+              <p className="text-[9px] font-sans font-bold tracking-[0.12em] text-white/25 uppercase mb-2">If markets struggle</p>
+              {committedResult ? (
+                <>
+                  <p className="font-display font-semibold text-lg" style={{ color: 'var(--danger)' }}>{formatINR(committedResult.finalP10)}</p>
+                  <p className="text-[9px] font-sans text-white/20 mt-1">Still recovered historically</p>
+                </>
+              ) : (
+                <p className="font-sans text-[11px] text-white/30 italic">Run simulation to see results</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Fear personalization */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25, ease: 'easeOut' }}
+            className="rounded-2xl p-4 border flex items-start gap-3"
+            style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+          >
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center font-display font-bold text-[11px]" style={{ background: 'var(--accent)', color: '#0a1a00' }}>K</div>
+            <p className="font-sans text-sm text-white/70 leading-relaxed pt-0.5">
+              {FEAR_INSIGHTS[fearType]}
+            </p>
+          </motion.div>
 
           {/* Historical timeline */}
           <motion.div

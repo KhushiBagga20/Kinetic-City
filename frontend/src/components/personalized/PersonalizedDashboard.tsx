@@ -19,7 +19,6 @@ import HistoricalSimulators from './pages/HistoricalSimulators'
 import ComparePage from './pages/ComparePage'
 import CalculatorsPage from './pages/CalculatorsPage'
 import ModuleJourney from './pages/ModuleJourney'
-import Roadmap3DPage from './pages/Roadmap3DPage'
 import { setPageTitle } from '../../lib/pageTitles'
 import { getTrackForFear } from '../../lib/curriculumData'
 import DotGrid from '../shared/DotGrid'
@@ -40,11 +39,6 @@ const FEAR_COLORS: Record<FearType, string> = {
 
 const SIMULATE_SECTIONS = ['simulation', 'time-machine', 'sandbox', 'harvest', 'historical']
 
-const SIMULATE_ITEMS = [
-  { id: 'simulation',   label: 'My Simulation',  desc: 'Monte Carlo fan chart',                icon: LineChart },
-  { id: 'time-machine', label: 'Time Machine',    desc: '₹500 through real market crashes',      icon: Clock },
-]
-
 const MOBILE_NAV = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'learn', label: 'Learn', icon: BookOpen },
@@ -61,7 +55,6 @@ const SIMULATE_SUB = [
 const MOBILE_BOTTOM = [
   { id: 'fear-profile', label: 'Fear Profile' },
   { id: 'my-card', label: 'My Card' },
-  { id: 'roadmap', label: 'Roadmap' },
 ]
 
 /* ── Active state resolver ─────────────────────────────────────────────────── */
@@ -107,43 +100,14 @@ export default function PersonalizedDashboard() {
   useEffect(() => { setPageTitle(dashboardSection) }, [dashboardSection])
 
   /* ── Dropdown state — only one open at a time ─────────────────────── */
-  const [openDropdown, setOpenDropdown] = useState<'simulate' | 'profile' | null>(null)
+  const [openDropdown, setOpenDropdown] = useState<'profile' | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState(false)
   const [simOpen, setSimOpen] = useState(false)
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
   const activeTab = getActiveTab(dashboardSection)
 
   /* ── Outside-click for profile dropdown ───────────────────────────── */
-  useEffect(() => {
-    if (openDropdown !== 'profile') return
-    const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [openDropdown])
-
-  /* ── Simulate hover handlers (150ms close grace period) ──────────── */
-  const openSimulate = useCallback(() => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
-    setOpenDropdown('simulate')
-  }, [])
-
-  const scheduleCloseSimulate = useCallback(() => {
-    closeTimerRef.current = setTimeout(() => {
-      setOpenDropdown(prev => prev === 'simulate' ? null : prev)
-    }, 150)
-  }, [])
-
-  const keepSimulateOpen = useCallback(() => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
-  }, [])
-
-  /* ── Navigate helper ──────────────────────────────────────────────── */
   const nav = useCallback((section: string) => {
     navigate(`/dashboard/${section}`)
     setOpenDropdown(null)
@@ -169,7 +133,6 @@ export default function PersonalizedDashboard() {
       case 'profile':     return <ProfilePage key="profile" />
       case 'settings':    return <ProfilePage key="settings" />
       case 'module-reader': return <ModuleJourney key="module-reader" />
-      case 'roadmap':     return <Roadmap3DPage key="roadmap" />
       default:            return <DashboardHome key="home" />
     }
   }
@@ -210,96 +173,8 @@ export default function PersonalizedDashboard() {
           {/* Home */}
           <NavItem label="Home" active={activeTab === 'home'} onClick={() => nav('home')} />
 
-          {/* Simulate (with dropdown) */}
-          <div
-            className="relative"
-            onMouseEnter={() => !isTouchDevice.current ? openSimulate() : undefined}
-            onMouseLeave={() => !isTouchDevice.current ? scheduleCloseSimulate() : undefined}
-          >
-            <NavItem
-              label="Simulate"
-              active={activeTab === 'simulate'}
-              hasChevron
-              chevronOpen={openDropdown === 'simulate'}
-              onClick={() => isTouchDevice.current ? setOpenDropdown(d => d === 'simulate' ? null : 'simulate') : undefined}
-            />
-
-            {/* Simulate Dropdown */}
-            <AnimatePresence>
-              {openDropdown === 'simulate' && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="fixed"
-                  style={{ top: 60, zIndex: 200 }}
-                  onMouseEnter={keepSimulateOpen}
-                  onMouseLeave={scheduleCloseSimulate}
-                >
-                  <div
-                    className="mt-2 overflow-hidden"
-                    style={{
-                      width: 280,
-                      background: 'rgba(10,10,15,0.96)',
-                      backdropFilter: 'blur(24px)',
-                      WebkitBackdropFilter: 'blur(24px)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 16,
-                      padding: 8,
-                    }}
-                  >
-                    {SIMULATE_ITEMS.map((item, i) => {
-                      const Icon = item.icon
-                      return (
-                        <div key={item.id}>
-                          {i > 0 && <div className="mx-3" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />}
-                          <button
-                            onClick={() => nav(item.id)}
-                            className="w-full flex items-start gap-3 text-left transition-[background-color] duration-150"
-                            style={{ padding: '10px 14px', borderRadius: 10, touchAction: 'manipulation' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--accent)', strokeWidth: 1 }} />
-                            <div>
-                              <p className="font-sans text-[14px] text-white leading-tight">{item.label}</p>
-                              <p className="font-sans text-[11px] leading-tight mt-0.5" style={{ color: 'var(--text-secondary)' }}>{item.desc}</p>
-                            </div>
-                          </button>
-                        </div>
-                      )
-                    })}
-
-                    {/* ── HISTORICAL SIMULATORS divider + grouped item ── */}
-                    <div className="mx-3 my-1 flex items-center gap-2">
-                      <div className="flex-1" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
-                      <span className="font-sans text-[9px] font-bold tracking-[0.15em] text-white/20 uppercase whitespace-nowrap">Historical Simulators</span>
-                      <div className="flex-1" style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
-                    </div>
-                    <button
-                      onClick={() => nav('historical')}
-                      className="w-full flex items-start gap-3 text-left transition-[background-color] duration-150"
-                      style={{ padding: '10px 14px', borderRadius: 10, touchAction: 'manipulation' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      {/* Two overlapping circles icon */}
-                      <div className="relative w-4 h-4 mt-0.5 shrink-0">
-                        <div className="absolute top-0 left-0 w-3 h-3 rounded-full border" style={{ borderColor: 'var(--accent)', opacity: 0.7 }} />
-                        <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border" style={{ borderColor: '#1D9E75', opacity: 0.7 }} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-sans text-[14px] text-white leading-tight">Sandbox / Harvest Room</p>
-                        <p className="font-sans text-[11px] leading-tight mt-0.5" style={{ color: 'var(--text-secondary)' }}>Invest in any year · Plant money across eras</p>
-                      </div>
-                      <span className="font-sans text-[9px] px-2 py-0.5 rounded-full mt-0.5 shrink-0" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>2 tools</span>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Simulate */}
+          <NavItem label="Simulate" active={activeTab === 'simulate'} onClick={() => nav('simulation')} />
 
           {/* Learn */}
           <NavItem label="Learn" active={activeTab === 'learn'} onClick={() => nav('learn')} />

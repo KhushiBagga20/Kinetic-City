@@ -78,11 +78,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .box-glow {
-  box-shadow: 0 0 20px rgba(192, 241, 142, 0.2);
+  box-shadow: 0 8px 24px rgba(192, 241, 142, 0.15);
 }
 
 .box-glow:hover {
-  box-shadow: 0 0 30px rgba(192, 241, 142, 0.35);
+  box-shadow: 0 12px 32px rgba(192, 241, 142, 0.25);
 }
 
 /* Marketing navbar scroll state */

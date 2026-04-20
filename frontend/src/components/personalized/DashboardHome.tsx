@@ -256,7 +256,7 @@ export default function DashboardHome() {
             onClick={() => setDashboardSection(item.id)}
             className="rounded-2xl p-4 border text-left cursor-pointer"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
-            whileHover={{ scale: 1.02, borderColor: 'rgba(192,241,142,0.25)' }}
+            whileHover={{ borderColor: 'rgba(192,241,142,0.2)', boxShadow: '0 4px 20px rgba(192,241,142,0.06)' }}
             whileTap={{ scale: 0.97 }}
           >
             <item.icon className="w-4 h-4 mb-2" style={{ color: 'var(--accent)' }} />
@@ -288,13 +288,19 @@ export default function DashboardHome() {
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
+            whileHover={{ boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
             className="rounded-3xl border transition-all duration-300"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)', padding: '28px 32px' }}
           >
             <h2 className="font-display font-medium text-white leading-tight" style={{ fontSize: 22 }}>
               {getGreeting(firstName)}
             </h2>
+            <p className="font-sans text-[13px] text-white/40 mt-1">
+              {fearType === 'loss' && "Markets dip. They always recover. Your patience is your edge."}
+              {fearType === 'jargon' && "One term a day. That's all it takes to demystify investing."}
+              {fearType === 'scam' && "Every number here comes from SEBI-regulated public data."}
+              {fearType === 'trust' && "No fund managers. No humans. Just index math working for you."}
+            </p>
             <p className="font-sans text-[13px] leading-relaxed pl-3 mt-3" style={{ color: 'rgba(255,255,255,0.5)', borderLeft: '2px solid rgba(192,241,142,0.3)' }}>
               {getDailyQuote()}
             </p>
@@ -346,7 +352,7 @@ export default function DashboardHome() {
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.12 }}
-            whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(192,241,142,0.15)', borderColor: 'rgba(192,241,142,0.4)' }}
+            whileHover={{ boxShadow: '0 8px 32px rgba(192,241,142,0.15)', borderColor: 'rgba(192,241,142,0.4)' }}
             className="rounded-3xl p-6 border transition-all duration-300 cursor-default"
             style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.25)' }}
           >
@@ -354,11 +360,27 @@ export default function DashboardHome() {
               <Zap className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
               <p className="font-sans text-xs text-white/30 font-medium">Today's One Thing</p>
             </div>
-            <h3 className="font-display font-bold text-2xl mb-2" style={{ color: 'var(--accent)' }}>{dailyTerm.term}</h3>
-            <p className="font-sans text-[13px] text-white/50 leading-relaxed mb-3">{dailyTerm.def}</p>
-            <button onClick={() => setDashboardSection('kinu')} className="font-sans text-[10px] text-white/20 hover:text-white/40 transition-[color] duration-200">
-              Ask KINU to explain it differently →
-            </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-4 items-start">
+                <div className="flex-1">
+                  <h3 className="font-display font-bold text-2xl mb-2" style={{ color: 'var(--accent)' }}>
+                    {fearType === 'loss' && 'Market Recovery'}
+                    {fearType === 'jargon' && dailyTerm.term}
+                    {fearType === 'scam' && 'SEBI Regulated'}
+                    {fearType === 'trust' && 'Auto-Rebalanced'}
+                  </h3>
+                  <p className="font-sans text-[13px] text-white/50 leading-relaxed">
+                    {fearType === 'loss' && "Nifty 50 has recovered from every crash in its history. Average recovery time: 14 months."}
+                    {fearType === 'jargon' && dailyTerm.def}
+                    {fearType === 'scam' && "SEBI-regulated index funds are audited quarterly. Your money cannot disappear."}
+                    {fearType === 'trust' && "The Nifty 50 index rebalances automatically. No human decides what's in it."}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setDashboardSection('kinu')} className="font-sans text-[10px] text-white/20 hover:text-white/40 transition-[color] duration-200 mt-4 text-left">
+                Ask KINU to explain it differently →
+              </button>
+            </div>
           </motion.div>
 
           {/* ── Quick Nav Cards ──────────────────────────────────────── */}
@@ -376,7 +398,7 @@ export default function DashboardHome() {
                 onClick={() => setDashboardSection(nav.section)}
                 className="rounded-2xl p-4 border text-left transition-all duration-300 group cursor-pointer"
                 style={{ background: 'var(--surface)', borderColor: 'rgba(255,255,255,0.06)' }}
-                whileHover={{ scale: 1.03, boxShadow: `0 8px 24px ${nav.color}25`, borderColor: `${nav.color}60` }}
+                whileHover={{ boxShadow: `0 8px 24px ${nav.color}25`, borderColor: `${nav.color}60` }}
                 whileTap={{ scale: 0.97 }}
               >
                 <nav.icon className="w-4 h-4 mb-2.5 transition-transform duration-300 group-hover:scale-110" style={{ color: nav.color }} />
@@ -393,7 +415,7 @@ export default function DashboardHome() {
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.18 }}
-            whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
+            whileHover={{ boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
             className="rounded-3xl p-6 border transition-all duration-300"
             style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
           >

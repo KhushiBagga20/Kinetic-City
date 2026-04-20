@@ -214,17 +214,17 @@ export default function FearProfiler() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: [0.8, 1.05, 1] }}
             transition={{ delay: 0.2, duration: 0.6, times: [0, 0.7, 1] }}
-            className="inline-block mb-8"
+            className="block mx-auto max-w-sm mb-8"
           >
             <div
-              className="rounded-3xl px-8 py-6 border"
+              className="rounded-3xl px-8 py-6 border text-center"
               style={{
                 background: profile.bg,
                 borderColor: `${profile.color}30`,
               }}
             >
               <h1
-                className="font-display font-bold tracking-tight leading-none"
+                className="font-display font-bold tracking-tight leading-none text-center w-full"
                 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', color: profile.color }}
               >
                 {profile.name}
@@ -249,6 +249,7 @@ export default function FearProfiler() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
               onClick={() => { useAppStore.getState().setIsNewUser(true); setView('signup') }}
+              whileHover={{ boxShadow: '0 12px 32px -4px rgba(192,241,142,0.5), 0 0 0 1px rgba(192,241,142,0.25)' }}
               className="bg-[var(--color-primary-fixed)] hover:bg-[#b4e882] text-[#0a1a00] font-sans font-bold text-sm px-10 py-4 rounded-full transition-all duration-200 box-glow active:scale-[0.97] flex items-center gap-2 mx-auto"
             >
               Continue to Dashboard
@@ -322,17 +323,19 @@ export default function FearProfiler() {
                 {question.options.map((option, i) => {
                   const isSelected = selectedIdx === i
                   return (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        delay: 0.15 + i * 0.08,
-                        duration: 0.5,
-                        ease: 'easeOut' as const,
-                      }}
-                      onClick={() => handleSelect(i)}
-                      className="text-left p-5 rounded-3xl border transition-[background-color,border-color] duration-200 group relative overflow-hidden active:scale-[0.98]"
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: 0.15 + i * 0.08,
+                          duration: 0.5,
+                          ease: 'easeOut' as const,
+                        }}
+                        whileHover={{ borderColor: 'rgba(255,255,255,0.15)' }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSelect(i)}
+                        className="text-left p-5 rounded-3xl border transition-[background-color,border-color] duration-200 group relative overflow-hidden"
                       style={{
                         background: isSelected
                           ? 'rgba(192,241,142,0.07)'
@@ -363,11 +366,6 @@ export default function FearProfiler() {
                       >
                         {option.text}
                       </p>
-
-                      {/* Hover shimmer */}
-                      {!isSelected && (
-                        <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-3xl pointer-events-none" />
-                      )}
                     </motion.button>
                   )
                 })}
@@ -381,14 +379,15 @@ export default function FearProfiler() {
                   transition={{ duration: 0.3 }}
                   className="mt-8 flex justify-center"
                 >
-                  <button
+                  <motion.button
+                    whileHover={{ boxShadow: '0 12px 32px -4px rgba(192,241,142,0.5), 0 0 0 1px rgba(192,241,142,0.25)' }}
                     onClick={goNext}
                     disabled={selectedIdx === null}
-                    className="flex items-center gap-2.5 bg-[var(--color-primary-fixed)] hover:bg-[#b4e882] disabled:opacity-30 text-[#0a1a00] font-sans font-bold text-sm px-8 py-3.5 rounded-full transition-all duration-200 box-glow active:scale-[0.97]"
+                    className="flex items-center gap-2.5 bg-[var(--color-primary-fixed)] hover:bg-[#b4e882] disabled:opacity-30 text-[#0a1a00] font-sans font-bold text-sm px-8 py-3.5 rounded-full transition-all duration-200 box-glow"
                   >
                     Next
                     <ArrowRight className="w-4 h-4" />
-                  </button>
+                  </motion.button>
                 </motion.div>
               )}
 

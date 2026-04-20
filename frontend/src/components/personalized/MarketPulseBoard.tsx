@@ -1,257 +1,267 @@
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Search, X, Wifi, WifiOff } from 'lucide-react'
+import { useLiveMarket, type QuoteData, type DataSource } from '../../hooks/useLiveMarket'
+import StockDetail from './market/StockDetail'
 
-/* ── Market indicators ───────────────────────────────────────────────────── */
+/* ── Token map ───────────────────────────────────────────────────────────── */
 
-interface Indicator {
-  name: string
-  baseValue: number
-  format: (v: number) => string
-  noiseRange: number        // ±% per tick
-  explanation: string       // fear-framed educational blurb
+interface WatchlistItem {
+  symbol: string; token: string; exch: string; type: 'index' | 'stock'
 }
 
-const INDICATORS: Indicator[] = [
-  { name: 'Nifty 50',     baseValue: 24198, format: v => v.toLocaleString('en-IN', { maximumFractionDigits: 0 }), noiseRange: 0.3, explanation: 'The Nifty 50 tracks India\'s 50 largest companies by market cap. When you invest via an index fund, this is exactly what your money copies. No human picks stocks — just math.' },
-  { name: 'Sensex',       baseValue: 79442, format: v => v.toLocaleString('en-IN', { maximumFractionDigits: 0 }), noiseRange: 0.3, explanation: 'The Sensex tracks the top 30 companies on the BSE. It\'s the oldest index in India and moves similarly to Nifty 50. If one is up, the other almost always is too.' },
-  { name: 'Midcap 150',   baseValue: 11024, format: v => v.toLocaleString('en-IN', { maximumFractionDigits: 0 }), noiseRange: 0.3, explanation: 'Midcap companies are mid-sized — they grow faster than large caps but swing more. Higher reward, higher volatility. Good for long-term (7+ year) investors.' },
-  { name: 'Gold (₹/g)',   baseValue: 7842,  format: v => `₹${v.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, noiseRange: 0.1, explanation: 'Gold is a hedge — it tends to rise when equity falls. Many investors keep 5–10% in gold ETFs for stability. It doesn\'t compound like equity, but it protects.' },
-  { name: 'USD/INR',      baseValue: 83.4,  format: v => v.toFixed(2), noiseRange: 0.1, explanation: 'The rupee-dollar rate affects import costs and IT sector earnings. A weaker rupee boosts IT stocks (they earn in dollars) but raises fuel and import prices.' },
+const DEFAULT_WATCHLIST: WatchlistItem[] = [
+  { symbol: 'NIFTY 50',   token: '11630', exch: 'NSE', type: 'index' },
+  { symbol: 'BANK NIFTY', token: '26000', exch: 'NSE', type: 'index' },
+  { symbol: 'SENSEX',     token: '1',     exch: 'BSE', type: 'index' },
+  { symbol: 'RELIANCE',   token: '2885',  exch: 'NSE', type: 'stock' },
+  { symbol: 'HDFC BANK',  token: '1333',  exch: 'NSE', type: 'stock' },
+  { symbol: 'INFOSYS',    token: '1594',  exch: 'NSE', type: 'stock' },
+  { symbol: 'TCS',        token: '11536', exch: 'NSE', type: 'stock' },
+  { symbol: 'ICICI BANK', token: '4963',  exch: 'NSE', type: 'stock' },
 ]
 
-/* ── Seed-based initial history ──────────────────────────────────────────── */
+/* ── Mini sparkline ──────────────────────────────────────────────────────── */
 
-function seedHistory(base: number, noise: number): number[] {
-  const pts: number[] = []
-  let v = base
-  for (let i = 0; i < 7; i++) {
-    const delta = (Math.random() - 0.5) * 2 * (noise / 100) * v
-    v += delta
-    pts.push(v)
-  }
-  return pts
-}
-
-/* ── Mini sparkline SVG ──────────────────────────────────────────────────── */
-
-function MiniSparkline({ data, up, width = 60, height = 24 }: { data: number[]; up: boolean; width?: number; height?: number }) {
+function Sparkline({ data, up }: { data: number[]; up: boolean }) {
   if (data.length < 2) return null
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const w = width
-  const h = height
-
-  const points = data.map((v, i) => ({
-    x: (i / (data.length - 1)) * w,
-    y: h - ((v - min) / range) * (h - 4) - 2,
-  }))
-
-  // Cubic bezier path
-  let d = `M ${points[0].x},${points[0].y}`
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1]
-    const curr = points[i]
-    const cpx1 = prev.x + (curr.x - prev.x) * 0.4
-    const cpx2 = prev.x + (curr.x - prev.x) * 0.6
-    d += ` C ${cpx1},${prev.y} ${cpx2},${curr.y} ${curr.x},${curr.y}`
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1
+  const w = 48, h = 20
+  const pts = data.map((v, i) => ({ x: (i / (data.length - 1)) * w, y: h - ((v - min) / range) * (h - 4) - 2 }))
+  let d = `M ${pts[0].x},${pts[0].y}`
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i - 1], c = pts[i]
+    d += ` C ${p.x + (c.x - p.x) * 0.4},${p.y} ${p.x + (c.x - p.x) * 0.6},${c.y} ${c.x},${c.y}`
   }
-
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0">
-      <path d={d} fill="none" stroke={up ? 'var(--teal)' : 'var(--danger)'} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0"><path d={d} fill="none" stroke={up ? '#1D9E75' : '#E24B4A'} strokeWidth="1.5" strokeLinecap="round" /></svg>
 }
 
-/* ── Animated number display ─────────────────────────────────────────────── */
+/* ── Price formatter ─────────────────────────────────────────────────────── */
 
-function AnimatedValue({ value, formatter, up }: { value: number; formatter: (v: number) => string; up: boolean }) {
-  const mv = useMotionValue(value)
-  const display = useTransform(mv, v => formatter(v))
-  const [text, setText] = useState(formatter(value))
-
-  useEffect(() => {
-    const controls = animate(mv, value, { duration: 0.8, ease: 'easeOut' })
-    const unsub = display.on('change', v => setText(v))
-    return () => { controls.stop(); unsub() }
-  }, [value, mv, display])
-
-  return (
-    <span className="font-mono text-[14px] tabular-nums" style={{ color: up ? 'var(--teal)' : 'var(--danger)' }}>
-      {text}
-    </span>
-  )
+function fmtPrice(v: string | undefined): string {
+  if (!v) return '—'
+  const n = parseFloat(v)
+  if (isNaN(n)) return v
+  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   MARKET PULSE BOARD
+   MARKET PULSE BOARD — Full Stock Terminal
    ══════════════════════════════════════════════════════════════════════════ */
 
 export default function MarketPulseBoard() {
-  // State for each indicator: current value, change%, history
-  const [state, setState] = useState(() =>
-    INDICATORS.map(ind => {
-      const history = seedHistory(ind.baseValue, ind.noiseRange)
-      const current = history[history.length - 1]
-      const prev = history[history.length - 2]
-      return {
-        current,
-        changePct: ((current - prev) / prev) * 100,
-        history,
-      }
-    })
-  )
+  const { quotes, connected, dataSource, fetchCandles, searchScrip, fetchQuote } = useLiveMarket()
 
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(null)
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(DEFAULT_WATCHLIST)
+  const [selectedToken, setSelectedToken] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Array<{ tsym: string; token: string; exch: string; cname: string }>>([])
+  const [showSearch, setShowSearch] = useState(false)
+  const [showMobileDetail, setShowMobileDetail] = useState(false)
 
-  const tick = useCallback(() => {
-    setState(prev =>
-      prev.map((s, i) => {
-        const ind = INDICATORS[i]
-        const delta = (Math.random() - 0.5) * 2 * (ind.noiseRange / 100) * s.current
-        const next = s.current + delta
-        const changePct = ((next - s.current) / s.current) * 100
-        const newHistory = [...s.history.slice(-6), next]
-        return { current: next, changePct, history: newHistory }
-      })
-    )
-  }, [])
+  // Rolling sparkline data per token (last 8 LTPs)
+  const sparkData = useRef<Record<string, number[]>>({})
 
+  // Track LTP changes for sparklines
   useEffect(() => {
-    intervalRef.current = setInterval(tick, 30_000) // every 30 seconds
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [tick])
+    for (const item of watchlist) {
+      const lp = quotes[item.token]?.lp
+      if (!lp) continue
+      const n = parseFloat(lp)
+      if (isNaN(n)) continue
+      const arr = sparkData.current[item.token] || []
+      if (arr.length === 0 || arr[arr.length - 1] !== n) {
+        sparkData.current[item.token] = [...arr.slice(-7), n]
+      }
+    }
+  }, [quotes, watchlist])
 
-  const selectedInd = selectedIdx !== null ? INDICATORS[selectedIdx] : null
-  const selectedState = selectedIdx !== null ? state[selectedIdx] : null
+  // REST polling fallback when WS is disconnected
+  useEffect(() => {
+    if (connected || !selectedToken) return
+    const sel = watchlist.find(w => w.token === selectedToken)
+    if (!sel) return
+    const poll = setInterval(() => { fetchQuote(sel.exch, sel.token) }, 5000)
+    return () => clearInterval(poll)
+  }, [connected, selectedToken, watchlist, fetchQuote])
+
+  // Debounced search
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleSearch = useCallback((q: string) => {
+    setSearchQuery(q)
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (!q.trim()) { setSearchResults([]); return }
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchScrip(q, 'NSE')
+      setSearchResults(results)
+    }, 400)
+  }, [searchScrip])
+
+  const addToWatchlist = useCallback((result: { tsym: string; token: string; exch: string }) => {
+    if (watchlist.some(w => w.token === result.token && w.exch === result.exch)) {
+      setSelectedToken(result.token)
+    } else {
+      setWatchlist(prev => [...prev, { symbol: result.tsym, token: result.token, exch: result.exch, type: 'stock' }])
+      setSelectedToken(result.token)
+    }
+    setSearchQuery(''); setSearchResults([]); setShowSearch(false)
+  }, [watchlist])
+
+  const selectedItem = useMemo(() => watchlist.find(w => w.token === selectedToken), [watchlist, selectedToken])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
-      className="rounded-3xl border transition-all duration-300"
-      style={{
-        background: 'var(--surface)',
-        borderColor: 'var(--border)',
-        padding: '20px 24px',
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="font-sans text-[11px] font-medium uppercase tracking-wider text-white/25">Market Pulse</p>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style={{ background: 'var(--teal)' }} />
-            <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: 'var(--teal)' }} />
-          </span>
-          <span className="font-sans text-[10px] text-white/30">LIVE · Simulated</span>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      className="rounded-3xl border overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+
+      <div className="flex flex-col md:flex-row" style={{ minHeight: 520 }}>
+
+        {/* ── LEFT PANEL — Watchlist ──────────────────────────────────────── */}
+        <div className={`flex-none md:w-72 border-r ${showMobileDetail ? 'hidden md:block' : ''}`}
+          style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+
+          {/* Header */}
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] uppercase tracking-widest text-white/30 font-medium">Market</span>
+              {/* Data source badge */}
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                {dataSource === 'shoonya' ? (
+                  <>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style={{ background: '#c0f18e' }} />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: '#c0f18e' }} />
+                    </span>
+                    <span className="text-[9px] font-medium" style={{ color: '#c0f18e' }}>LIVE</span>
+                  </>
+                ) : dataSource === 'yfinance' ? (
+                  <>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: '#F59E0B' }} />
+                    </span>
+                    <span className="text-[9px] font-medium" style={{ color: '#F59E0B' }}>DELAYED · 15 min</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+                    <span className="text-[9px] text-white/25">OFFLINE</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <Search className="w-3.5 h-3.5 text-white/20 shrink-0" />
+                <input value={searchQuery} onChange={e => handleSearch(e.target.value)}
+                  onFocus={() => setShowSearch(true)}
+                  onKeyDown={e => e.key === 'Escape' && (setShowSearch(false), setSearchResults([]))}
+                  placeholder="Search stocks…" className="bg-transparent text-[12px] text-white/80 w-full outline-none placeholder:text-white/20" />
+                {searchQuery && (
+                  <button onClick={() => { setSearchQuery(''); setSearchResults([]); setShowSearch(false) }}>
+                    <X className="w-3 h-3 text-white/20 hover:text-white/40" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search dropdown */}
+              <AnimatePresence>
+                {showSearch && searchResults.length > 0 && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                    className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-20"
+                    style={{ background: 'rgba(10,20,25,0.98)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)' }}>
+                    {searchResults.map(r => (
+                      <button key={`${r.exch}-${r.token}`} onClick={() => addToWatchlist(r)}
+                        className="flex items-center justify-between w-full px-3 py-2 text-left hover:bg-white/[0.03] transition-colors">
+                        <div>
+                          <span className="text-[12px] text-white/80 font-medium">{r.tsym}</span>
+                          {r.cname && <p className="text-[10px] text-white/25 truncate max-w-[180px]">{r.cname}</p>}
+                        </div>
+                        <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)' }}>{r.exch}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Watchlist items */}
+          <div className="px-2 pb-3 overflow-y-auto" style={{ maxHeight: 420, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}>
+            {watchlist.map((item, i) => {
+              const q = quotes[item.token]
+              const lp = q?.lp
+              const pc = q?.pc
+              const isUp = pc ? parseFloat(pc) >= 0 : true
+              const active = selectedToken === item.token
+              const spark = sparkData.current[item.token] || []
+
+              return (
+                <motion.button key={`${item.exch}-${item.token}`}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  onClick={() => { setSelectedToken(item.token); setShowMobileDetail(true) }}
+                  className="flex items-center w-full px-3 py-2.5 rounded-xl transition-all duration-150"
+                  style={{
+                    background: active ? 'rgba(192,241,142,0.06)' : 'transparent',
+                    borderLeft: active ? '2px solid #c0f18e' : '2px solid transparent',
+                  }}>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-medium text-white truncate">{item.symbol}</span>
+                      <span className="text-[8px] font-bold uppercase px-1 py-px rounded"
+                        style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.25)' }}>{item.exch}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {lp ? (
+                      <>
+                        <Sparkline data={spark} up={isUp} />
+                        <div className="text-right">
+                          <p className="text-[12px] font-mono tabular-nums text-white/80">{fmtPrice(lp)}</p>
+                          <p className="text-[10px] font-mono tabular-nums" style={{ color: isUp ? '#1D9E75' : '#E24B4A' }}>
+                            {isUp ? '+' : ''}{parseFloat(pc || '0').toFixed(2)}%
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-1 items-end">
+                        <div className="h-3 w-16 rounded" style={{ background: 'linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                        <div className="h-2.5 w-10 rounded" style={{ background: 'linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.03) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                      </div>
+                    )}
+                  </div>
+                </motion.button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── RIGHT PANEL — Detail ───────────────────────────────────────── */}
+        <div className={`flex-1 p-5 ${!showMobileDetail ? 'hidden md:block' : ''}`}>
+          <AnimatePresence mode="wait">
+            {selectedItem ? (
+              <StockDetail
+                key={selectedItem.token}
+                symbol={selectedItem.symbol}
+                token={selectedItem.token}
+                exchange={selectedItem.exch}
+                quote={quotes[selectedItem.token]}
+                fetchCandles={fetchCandles}
+                onBack={() => setShowMobileDetail(false)}
+              />
+            ) : (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="h-full flex flex-col items-center justify-center gap-3 text-center py-20">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  {connected ? <Wifi className="w-5 h-5 text-white/15" /> : <WifiOff className="w-5 h-5 text-white/15" />}
+                </div>
+                <p className="text-[14px] text-white/30 font-medium">Select a stock to view details</p>
+                <p className="text-[11px] text-white/15">Click any item in the watchlist</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-
-      {/* Rows — each clickable */}
-      <div className="space-y-0">
-        {INDICATORS.map((ind, i) => {
-          const s = state[i]
-          const up = s.changePct >= 0
-          return (
-            <div key={ind.name}>
-              {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '0' }} />}
-              <button
-                onClick={() => setSelectedIdx(i)}
-                className="flex items-center py-3 w-full text-left transition-[background-color] duration-150 rounded-lg -mx-2 px-2 hover:bg-[rgba(255,255,255,0.03)]"
-                style={{ gap: 12 }}
-              >
-                <span className="font-sans text-[14px] text-white/60 font-medium flex-1 min-w-0 truncate">{ind.name}</span>
-                <AnimatedValue value={s.current} formatter={ind.format} up={up} />
-                <span className="font-mono text-[12px] w-[56px] text-right tabular-nums" style={{ color: up ? 'var(--teal)' : 'var(--danger)' }}>
-                  {up ? '+' : ''}{s.changePct.toFixed(1)}%
-                </span>
-                <MiniSparkline data={s.history} up={up} />
-              </button>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Disclaimer */}
-      <p className="font-sans text-[10px] text-white/15 mt-3">
-        All values simulated for educational purposes. Not real-time data.
-      </p>
-
-      {/* ── Stock Detail Popup Overlay ───────────────────────────────── */}
-      <AnimatePresence>
-        {selectedInd && selectedState && selectedIdx !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-6"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}
-            onClick={() => setSelectedIdx(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.97 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="max-w-md w-full rounded-3xl p-7 border"
-              style={{
-                background: 'rgba(10,10,15,0.96)',
-                backdropFilter: 'blur(24px)',
-                borderColor: 'var(--border)',
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedIdx(null)}
-                className="absolute top-4 right-4 text-white/20 hover:text-white/50 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Name + Value */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-semibold text-xl text-white">{selectedInd.name}</h3>
-                <span className={`font-mono text-sm font-bold ${selectedState.changePct >= 0 ? 'text-[var(--teal)]' : 'text-[var(--danger)]'}`}>
-                  {selectedState.changePct >= 0 ? '+' : ''}{selectedState.changePct.toFixed(2)}%
-                </span>
-              </div>
-
-              {/* Current value */}
-              <p className="font-display font-bold text-3xl mb-5" style={{ color: selectedState.changePct >= 0 ? 'var(--teal)' : 'var(--danger)' }}>
-                {selectedInd.format(selectedState.current)}
-              </p>
-
-              {/* Larger sparkline */}
-              <div className="mb-5 flex justify-center">
-                <MiniSparkline data={selectedState.history} up={selectedState.changePct >= 0} width={280} height={60} />
-              </div>
-
-              {/* Explanation */}
-              <div className="rounded-2xl p-4 border" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border)' }}>
-                <p className="font-sans text-[13px] text-white/50 leading-relaxed">
-                  {selectedInd.explanation}
-                </p>
-              </div>
-
-              {/* Dismiss */}
-              <button
-                onClick={() => setSelectedIdx(null)}
-                className="w-full mt-4 py-3 rounded-full font-sans text-sm font-medium text-white/40 hover:text-white/60 transition-colors"
-              >
-                Got it
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   )
 }

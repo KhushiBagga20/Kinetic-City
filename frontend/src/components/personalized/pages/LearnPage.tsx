@@ -252,30 +252,6 @@ export default function LearnPage() {
         <NewsImpactCard context="learn" fearType={fearType} />
       </div>
 
-      {/* 3D Roadmap Explorer Portal */}
-      <button 
-        onClick={() => navigate('/dashboard/roadmap')}
-        className="w-full relative overflow-hidden rounded-[32px] p-8 border text-left mb-6 transition-[transform,border-color] duration-300 hover:scale-[1.01] active:scale-[0.99] shadow-xl group cursor-pointer"
-        style={{ 
-          background: 'var(--surface)', 
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundImage: 'linear-gradient(to bottom right, rgba(192,241,142,0.05), transparent)'
-        }}
-      >
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-           <div>
-             <div className="w-10 h-10 rounded-xl mb-4 flex items-center justify-center border border-white/10 shadow-inner" style={{ background: 'rgba(255,255,255,0.03)' }}>
-               <span className="text-xl">🗺️</span>
-             </div>
-             <h2 className="font-display font-semibold text-2xl text-white tracking-tight mb-2">Explore the 3D Curriculum Track</h2>
-             <p className="font-sans text-white/50 text-sm max-w-md">Embark on your financial journey through an immersive isometric roadmap. Play modules natively inside the 3D interface.</p>
-           </div>
-           
-           <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/5 transition-colors bg-black/20 self-end md:self-auto">
-             <ChevronRight className="w-5 h-5 text-white/70" />
-           </div>
-        </div>
-      </button>
 
       {/* Calculator Tools */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
