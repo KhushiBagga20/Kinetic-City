@@ -127,6 +127,7 @@ export default function TimeMachinePage() {
 
   // Playback state
   const [speed, setSpeed] = useState(1)
+  const [runCount, setRunCount] = useState(0)
   const [, setIsPaused] = useState(false)
   const [currentDate, setCurrentDate] = useState('')
   const [investedSoFar, setInvestedSoFar] = useState(0)
@@ -226,6 +227,7 @@ export default function TimeMachinePage() {
     }
 
     setPhase('running')
+    setRunCount(c => c + 1)
     setIsPaused(false)
     setActiveCrash(null)
 
@@ -534,6 +536,23 @@ export default function TimeMachinePage() {
 
               {/* ── CENTRE COLUMN: Counter + Timeline ── */}
               <div className="order-1 lg:order-2 space-y-4">
+
+                {/* Progress bar — only visible while running */}
+                {phase === 'running' && (
+                  <div className="w-full h-0.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <motion.div
+                      key={runCount}
+                      className="h-full rounded-full"
+                      style={{ background: '#c0f18e' }}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{
+                        duration: speed === 20 ? 0.4 : speed === 5 ? 1.6 : speed === 2 ? 4 : 8,
+                        ease: 'linear'
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Crash Banner — slides in above the counter */}
                 <AnimatePresence>

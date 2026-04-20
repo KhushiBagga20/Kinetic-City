@@ -19,15 +19,48 @@ const NAV_SHORTCUTS = [
   { label: 'Time Machine', cmd: 'open time machine' },
 ]
 
+// ── Addition B: contextual nudge per section ──────────────────────────────────
+const NUDGE_MAP: Record<string, string> = {
+  'time-machine': 'How does this simulation work?',
+  'learn': 'Quiz me on this module',
+  'portfolio': 'Is my allocation healthy?',
+  'sandbox': 'Explain what just happened',
+}
+
+// ── Addition C: contextual chips per section ──────────────────────────────────
+const CONTEXT_CHIPS: Record<string, string[]> = {
+  'time-machine': ['Why did the market crash?', 'Should I have stayed invested?'],
+  'learn': ['Explain this simply', 'Give me an example'],
+  'portfolio': ["What's a good allocation?", 'How do I calculate XIRR?'],
+}
+
 export default function KinuFloatingButton() {
   const [open, setOpen] = useState(false)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
+  const dashboardSection = useAppStore(s => s.dashboardSection)
+  const kinuIntroSeen = useAppStore(s => s.kinuIntroSeen)
+  const setKinuIntroSeen = useAppStore(s => s.setKinuIntroSeen)
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const greeting = GREETINGS[fearType]
   const { messages, input, setInput, isTyping, isListening, voiceError, sendMessage, startListening, stopListening } = useKinu(greeting)
 
+  // ── Addition A state ────────────────────────────────────────────────────────
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  // ── Addition B state ────────────────────────────────────────────────────────
+  const [nudgeKey, setNudgeKey] = useState(dashboardSection)
+
+  // ── Addition D state ────────────────────────────────────────────────────────
+  const [shouldPulse, setShouldPulse] = useState(true)
+
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const nudgeText = NUDGE_MAP[dashboardSection] ?? null
+  const contextChips = CONTEXT_CHIPS[dashboardSection] ?? ["What's the safest investment?", 'Explain SIP to me']
+
+  // ── Effect: focus/scroll on open ───────────────────────────────────────────
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 300)
@@ -35,8 +68,82 @@ export default function KinuFloatingButton() {
     }
   }, [open, messages])
 
+  // ── Addition A: first-time tooltip ─────────────────────────────────────────
+  useEffect(() => {
+    if (kinuIntroSeen || open) return
+    const show = setTimeout(() => setShowTooltip(true), 3000)
+    const hide = setTimeout(() => { setShowTooltip(false); setKinuIntroSeen() }, 8000)
+    return () => { clearTimeout(show); clearTimeout(hide) }
+  }, [kinuIntroSeen, open])
+
+  // ── Addition B: nudge key sync ──────────────────────────────────────────────
+  useEffect(() => { setNudgeKey(dashboardSection) }, [dashboardSection])
+
+  // ── Addition D: pulse ring resets per section ───────────────────────────────
+  useEffect(() => {
+    setShouldPulse(true)
+    const t = setTimeout(() => setShouldPulse(false), 30000)
+    return () => clearTimeout(t)
+  }, [dashboardSection])
+
+  // ── Handler: open overlay (clears tooltip + marks intro seen) ───────────────
+  function openOverlay() {
+    setOpen(true)
+    setShowTooltip(false)
+    setKinuIntroSeen()
+  }
+
   return (
     <>
+      {/* ── Addition A: first-time tooltip ─────────────────────────────────── */}
+      <AnimatePresence>
+        {showTooltip && !open && (
+          <motion.div
+            key="kinu-tooltip"
+            initial={{ scale: 0.8, opacity: 0, y: 0 }}
+            animate={{ scale: 1, opacity: 1, y: -8 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+            onClick={openOverlay}
+            className="fixed bottom-24 right-6 z-[201] px-4 py-2.5 rounded-2xl text-[13px] text-white/80 whitespace-nowrap cursor-pointer relative"
+            style={{ background: '#0f2a1f', border: '1px solid rgba(192,241,142,0.2)' }}
+          >
+            Ask me anything about investing →
+            {/* Arrow pointing down-right toward FAB */}
+            <div
+              className="absolute -bottom-1.5 right-6 w-3 h-3 rotate-45"
+              style={{
+                background: '#0f2a1f',
+                borderRight: '1px solid rgba(192,241,142,0.2)',
+                borderBottom: '1px solid rgba(192,241,142,0.2)',
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Addition B: contextual nudge pill ──────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {!open && nudgeText && (
+          <motion.button
+            key={nudgeKey}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => { setOpen(true); setTimeout(() => setInput(nudgeText), 350) }}
+            className="fixed bottom-7 right-20 z-[199] rounded-full px-3 py-1.5 text-[12px] whitespace-nowrap cursor-pointer"
+            style={{
+              background: 'rgba(192,241,142,0.08)',
+              border: '1px solid rgba(192,241,142,0.15)',
+              color: '#c0f18e',
+            }}
+          >
+            {nudgeText}
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* Floating K button — hidden when overlay is open */}
       <AnimatePresence>
         {!open && (
@@ -46,20 +153,22 @@ export default function KinuFloatingButton() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-            onClick={() => setOpen(true)}
+            onClick={openOverlay}
             className="fixed bottom-6 right-6 z-[200] w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl cursor-pointer"
             style={{ background: 'var(--accent)', color: '#0a1a00' }}
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}
           >
             <span className="font-display font-black text-xl">K</span>
-            {/* Pulse ring */}
-            <motion.div
-              className="absolute inset-0 rounded-2xl"
-              style={{ border: '2px solid var(--accent)' }}
-              animate={{ scale: [1, 1.25], opacity: [0.4, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
-            />
+            {/* ── Addition D: pulse ring only when fresh ───────────────────── */}
+            {shouldPulse && (
+              <motion.div
+                className="absolute inset-0 rounded-2xl"
+                style={{ border: '2px solid var(--accent)' }}
+                animate={{ scale: [1, 1.25], opacity: [0.4, 0] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+              />
+            )}
           </motion.button>
         )}
       </AnimatePresence>
@@ -107,19 +216,34 @@ export default function KinuFloatingButton() {
               </button>
             </div>
 
-            {/* Nav shortcuts */}
-            <div className="flex gap-2 px-4 py-2.5 overflow-x-auto shrink-0"
+            {/* ── Addition C: contextual chips + nav shortcuts ──────────────── */}
+            <div className="flex flex-col gap-0 px-4 pt-2.5 shrink-0"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              {NAV_SHORTCUTS.map(s => (
-                <button key={s.label}
-                  onClick={() => sendMessage(s.cmd)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider cursor-pointer transition-colors whitespace-nowrap"
-                  style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.07)' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,241,142,0.08)'; e.currentTarget.style.color = '#c0f18e'; e.currentTarget.style.borderColor = 'rgba(192,241,142,0.2)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}>
-                  → {s.label}
-                </button>
-              ))}
+              {/* Context chips */}
+              <div className="flex gap-2 flex-wrap mb-3">
+                {contextChips.map(chip => (
+                  <button key={chip} onClick={() => sendMessage(chip)}
+                    className="rounded-full px-3 py-1.5 text-[12px] text-white/60 border cursor-pointer transition-colors"
+                    style={{ background: 'rgba(192,241,142,0.05)', borderColor: 'rgba(192,241,142,0.12)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,241,142,0.1)'; e.currentTarget.style.color = '#c0f18e' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(192,241,142,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+              {/* Nav shortcuts */}
+              <div className="flex gap-2 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {NAV_SHORTCUTS.map(s => (
+                  <button key={s.label}
+                    onClick={() => sendMessage(s.cmd)}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider cursor-pointer transition-colors whitespace-nowrap"
+                    style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.07)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,241,142,0.08)'; e.currentTarget.style.color = '#c0f18e'; e.currentTarget.style.borderColor = 'rgba(192,241,142,0.2)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}>
+                    → {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Messages */}

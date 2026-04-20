@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { Flame } from 'lucide-react'
 import { useAppStore } from '../../../store/useAppStore'
 
@@ -17,10 +17,28 @@ function getMotivation(days: number): string {
 export default function StreakTracker() {
   const streakDays = useAppStore(s => s.streakDays)
   const updateStreak = useAppStore(s => s.updateStreak)
+  const acknowledgedStreakMilestones = useAppStore(s => s.acknowledgedStreakMilestones)
+  const acknowledgeMilestone = useAppStore(s => s.acknowledgeMilestone)
+  const [showMilestoneToast, setShowMilestoneToast] = useState(false)
+  const [milestoneReached, setMilestoneReached] = useState(0)
 
   useEffect(() => {
     updateStreak()
   }, [updateStreak])
+
+  useEffect(() => {
+    const MILESTONES = [3, 7, 14, 30, 60, 90, 100, 365]
+    if (MILESTONES.includes(streakDays) && !acknowledgedStreakMilestones.includes(streakDays)) {
+      setMilestoneReached(streakDays)
+      setShowMilestoneToast(true)
+      acknowledgeMilestone(streakDays)
+      
+      // Auto-hide toast after 4 seconds
+      const timer = setTimeout(() => setShowMilestoneToast(false), 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [streakDays, acknowledgedStreakMilestones, acknowledgeMilestone])
+
 
   // Monday-first index: Mon=0, Tue=1, ..., Sun=6
   // JS getDay(): Sun=0, Mon=1, ..., Sat=6
@@ -44,7 +62,7 @@ export default function StreakTracker() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
       whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.15)' }}
-      className="rounded-3xl p-6 border transition-all duration-300"
+      className="rounded-3xl p-6 border transition-all duration-300 relative"
       style={{
         background: 'var(--surface)',
         backdropFilter: 'blur(20px)',
@@ -52,6 +70,23 @@ export default function StreakTracker() {
         borderColor: 'var(--border)',
       }}
     >
+      <AnimatePresence>
+        {showMilestoneToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full border shadow-xl flex items-center gap-2 z-50"
+            style={{ background: 'rgba(20,20,20,0.95)', borderColor: 'var(--accent)' }}
+          >
+            <Flame className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span className="font-display text-[13px] text-white">
+              <span style={{ color: 'var(--accent)' }}>{milestoneReached} Day</span> Streak Milestone! 🔥
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(192,241,142,0.10)' }}>

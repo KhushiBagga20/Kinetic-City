@@ -3,7 +3,6 @@ import { useState, useMemo } from 'react'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import FearProgressBar from './shared/FearProgressBar'
 import StreakTracker from './shared/StreakTracker'
-import NextStepCard from './NextStepCard'
 import LearnShortcutCard from './LearnShortcutCard'
 import MarketPulseBoard from './MarketPulseBoard'
 import SeasonalPatterns from './SeasonalPatterns'
@@ -11,7 +10,8 @@ import GoalsSection from './goals/GoalsSection'
 import FearQuote from './shared/FearQuote'
 import MarketNewsFeed from '../news/MarketNewsFeed'
 import NewsTickerBar from '../news/NewsTickerBar'
-import { Zap, ChevronDown, Search, FlaskConical, ArrowUpRight, Sprout, LineChart, Clock, BookOpen, TrendingUp } from 'lucide-react'
+import { Zap, ChevronDown, Search, FlaskConical, ArrowUpRight, Sprout, LineChart, Clock, BookOpen, TrendingUp, ArrowRight } from 'lucide-react'
+import { getTrackForFear } from '../../lib/curriculumData'
 
 /* ── 30 rotating daily quotes ─────────────────────────────────────────────── */
 
@@ -96,6 +96,80 @@ const DAILY_TERMS = [
   { term: 'Exit Load', def: 'Fee if you sell too early. Most equity funds charge 1% if sold within 1 year.' },
 ]
 
+/* ── Next step logic (inlined from NextStepCard) ──────────────────────────── */
+
+interface NextStep {
+  icon: string
+  headline: string
+  subtext: string
+  cta: string
+  route: string
+}
+
+function getNextModuleName(fearType: string, completedModules: string[]): string {
+  const track = getTrackForFear(fearType)
+  const nextModule = track.find(m => !completedModules.includes(m.id))
+  return nextModule ? nextModule.title : track[track.length - 1].title
+}
+
+function getNextStep(state: {
+  portfolioSetup: boolean
+  goals: { length: number }
+  completedModules: string[]
+  simulationResult: any
+  timeMachineResult: any
+  fearType: string
+}): NextStep {
+  if (!state.portfolioSetup) return {
+    icon: '⚡',
+    headline: 'Start your first SIP',
+    subtext: 'Set up ₹100/month and watch it grow. Takes 3 minutes.',
+    cta: 'Start investing →',
+    route: 'portfolio',
+  }
+
+  if (state.goals.length === 0) return {
+    icon: '🎯',
+    headline: 'What are you investing for?',
+    subtext: 'Set a goal and KINETIC will tell you exactly how much you need each month.',
+    cta: 'Add your first goal →',
+    route: 'portfolio',
+  }
+
+  const trackModules = state.completedModules.filter(m => m.startsWith(state.fearType))
+  if (trackModules.length < 3) return {
+    icon: '📚',
+    headline: 'Continue your learning track',
+    subtext: `You've completed ${trackModules.length} of 10 modules. Next: "${getNextModuleName(state.fearType, state.completedModules)}"`,
+    cta: 'Continue learning →',
+    route: 'learn',
+  }
+
+  if (!state.simulationResult) return {
+    icon: '📊',
+    headline: 'Run your first simulation',
+    subtext: 'See 600 possible futures for your money. Takes 30 seconds.',
+    cta: 'Open simulation →',
+    route: 'simulation',
+  }
+
+  if (!state.timeMachineResult) return {
+    icon: '⏳',
+    headline: 'Survive the 2020 COVID crash',
+    subtext: 'Run ₹500 through the worst crash in recent memory. Watch it recover.',
+    cta: 'Open Time Machine →',
+    route: 'time-machine',
+  }
+
+  return {
+    icon: '✅',
+    headline: "You're doing great",
+    subtext: "You've covered the core KINETIC experience. Explore the Harvest Room next.",
+    cta: 'Try the Harvest Room →',
+    route: 'harvest',
+  }
+}
+
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
 
 function getGreeting(name: string): string {
@@ -121,8 +195,16 @@ export default function DashboardHome() {
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
   const newsItems = useAppStore(s => s.newsItems) || []
 
+  // Next step state
+  const portfolioSetup = useAppStore(s => s.portfolioSetup)
+  const goals = useAppStore(s => s.goals)
+  const completedModules = useAppStore(s => s.completedModules)
+  const simulationResult = useAppStore(s => s.simulationResult)
+  const timeMachineResult = useAppStore(s => s.timeMachineResult)
+
   const [jargonSearch, setJargonSearch] = useState('')
   const [expandedJargon, setExpandedJargon] = useState<string | null>(null)
+  const [marketOpen, setMarketOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
 
   const dailyTerm = DAILY_TERMS[new Date().getDate() % DAILY_TERMS.length]
 
@@ -132,24 +214,57 @@ export default function DashboardHome() {
     return JARGON_WORDS.filter(w => w.term.toLowerCase().includes(q) || w.def.toLowerCase().includes(q))
   }, [jargonSearch])
 
+  const step = getNextStep({
+    portfolioSetup, goals, completedModules: [...new Set(completedModules)],
+    simulationResult, timeMachineResult, fearType,
+  })
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
 
-      {/* ── Greeting + Quote ──────────────────────────────────────────── */}
+      {/* ── Today's Focus hero card ────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
-        className="rounded-3xl border mb-6 transition-all duration-300"
-        style={{ background: 'var(--surface)', borderColor: 'var(--border)', padding: '28px 32px' }}
+        onClick={() => setDashboardSection(step.route)}
+        className="rounded-3xl p-8 border cursor-pointer group mb-6"
+        style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.15)', borderLeft: '4px solid var(--accent)' }}
+        whileHover={{ borderColor: 'rgba(192,241,142,0.4)', boxShadow: '0 8px 30px rgba(192,241,142,0.1)' }}
+        whileTap={{ scale: 0.99 }}
       >
-        <h2 className="font-display font-medium text-white leading-tight" style={{ fontSize: 22 }}>
-          {getGreeting(firstName)}
-        </h2>
-        <p className="font-sans text-[15px] text-white/30 italic leading-relaxed mt-3">
-          &ldquo;{getDailyQuote()}&rdquo;
-        </p>
+        <p style={{ color: 'var(--accent)' }} className="text-[11px] uppercase tracking-widest font-sans mb-3">Today's focus</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0" style={{ background: 'rgba(192,241,142,0.12)' }}>
+            {step.icon}
+          </div>
+          <div className="flex-1">
+            <p className="font-display font-bold text-white text-[20px] leading-snug">{step.headline}</p>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--text-secondary)' }}>{step.subtext}</p>
+          </div>
+          <ArrowRight className="w-5 h-5 shrink-0 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style={{ color: 'var(--accent)' }} />
+        </div>
       </motion.div>
+
+      {/* ── Quick Actions 3-column grid ───────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { id: 'time-machine', label: 'Time Machine', desc: 'Survive real crashes', icon: Clock },
+          { id: 'sandbox', label: 'Sandbox', desc: 'Pick any market year', icon: FlaskConical },
+          { id: 'learn', label: 'Learn', desc: 'Your fear track', icon: BookOpen },
+        ].map(item => (
+          <motion.button key={item.id}
+            onClick={() => setDashboardSection(item.id)}
+            className="rounded-2xl p-4 border text-left cursor-pointer"
+            style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+            whileHover={{ scale: 1.02, borderColor: 'rgba(192,241,142,0.25)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <item.icon className="w-4 h-4 mb-2" style={{ color: 'var(--accent)' }} />
+            <p className="font-sans font-medium text-white text-[13px]">{item.label}</p>
+            <p className="font-sans text-[11px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>{item.desc}</p>
+          </motion.button>
+        ))}
+      </div>
 
       {/* ── News Ticker ───────────────────────────────────────────────── */}
       {newsItems.length > 0 && (
@@ -169,82 +284,49 @@ export default function DashboardHome() {
         {/* ═══ LEFT COLUMN ═══════════════════════════════════════════ */}
         <div className="space-y-6">
 
-          {/* ── Your Next Step ──────────────────────────────────────── */}
-          <NextStepCard />
+          {/* ── Greeting + Quote ──────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            whileHover={{ scale: 1.01, boxShadow: '0 8px 32px rgba(192,241,142,0.08)', borderColor: 'rgba(192,241,142,0.2)' }}
+            className="rounded-3xl border transition-all duration-300"
+            style={{ background: 'var(--surface)', borderColor: 'var(--border)', padding: '28px 32px' }}
+          >
+            <h2 className="font-display font-medium text-white leading-tight" style={{ fontSize: 22 }}>
+              {getGreeting(firstName)}
+            </h2>
+            <p className="font-sans text-[13px] leading-relaxed pl-3 mt-3" style={{ color: 'rgba(255,255,255,0.5)', borderLeft: '2px solid rgba(192,241,142,0.3)' }}>
+              {getDailyQuote()}
+            </p>
+          </motion.div>
 
           {/* ── Learn Quick Access ────────────────────────────────── */}
           <LearnShortcutCard />
 
-          {/* ── Market Pulse Board ──────────────────────────────────── */}
-          <MarketPulseBoard />
-
-          {/* ── Seasonal Patterns ─────────────────────────────────────── */}
-          <SeasonalPatterns />
-
-          {/* ── Market News Feed ─────────────────────────────────────── */}
-          <MarketNewsFeed maxItems={5} fearType={fearType} />
-
-          {/* ── Sim + Harvest CTA Row — side by side ──────────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Sandbox */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.08 }}
-              onClick={() => setDashboardSection('sandbox')}
-              className="w-full rounded-3xl p-5 border text-left group transition-all duration-300 cursor-pointer"
-              style={{ background: 'var(--surface)', borderColor: 'rgba(192,241,142,0.1)', borderLeft: '3px solid var(--accent)' }}
-              whileHover={{ scale: 1.02, borderColor: 'rgba(192,241,142,0.3)', boxShadow: '0 8px 30px rgba(192,241,142,0.15)' }}
-              whileTap={{ scale: 0.98 }}
+          {/* ── Market Intel (collapsible) ─────────────────────────── */}
+          <div>
+            <button
+              onClick={() => setMarketOpen(v => !v)}
+              className="flex items-center gap-2 mb-4 w-full text-left"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5">
-                  <FlaskConical className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                  <p className="font-display font-medium text-[15px]" style={{ color: 'var(--accent)' }}>Sandbox</p>
-                </div>
-                <ArrowUpRight className="w-3.5 h-3.5 text-white/15 group-hover:text-white/40 transition-colors" />
-              </div>
-              <p className="font-sans text-[12px] text-white/30 mb-3 leading-relaxed">
-                Pick a year. Allocate ₹50,000. See what history gave back.
-              </p>
-              <div className="flex gap-1.5 flex-wrap">
-                {['FY21 (COVID)', 'FY09 (GFC)', 'FY22 (+70%)'].map(pill => (
-                  <span key={pill} className="px-2 py-1 rounded-md font-mono text-[10px] border"
-                    style={{ background: 'rgba(192,241,142,0.03)', borderColor: 'rgba(192,241,142,0.10)', color: 'rgba(192,241,142,0.5)' }}>
-                    {pill}
-                  </span>
-                ))}
-              </div>
-            </motion.button>
-
-            {/* Harvest Room */}
-            <motion.button
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.10 }}
-              onClick={() => setDashboardSection('harvest')}
-              className="w-full rounded-3xl p-5 border text-left group transition-all duration-300 cursor-pointer"
-              style={{ background: 'var(--surface)', borderColor: 'rgba(29,158,117,0.1)', borderLeft: '3px solid var(--teal)' }}
-              whileHover={{ scale: 1.02, borderColor: 'rgba(29,158,117,0.3)', boxShadow: '0 8px 30px rgba(29,158,117,0.15)' }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2.5">
-                  <Sprout className="w-4 h-4" style={{ color: 'var(--teal)' }} />
-                  <p className="font-display font-medium text-[15px]" style={{ color: 'var(--teal)' }}>Harvest Room</p>
-                </div>
-                <ArrowUpRight className="w-3.5 h-3.5 text-white/15 group-hover:text-white/40 transition-colors" />
-              </div>
-              <p className="font-sans text-[12px] text-white/30 mb-3 leading-relaxed">
-                Choose your era. Plant your money. Watch history grow it.
-              </p>
-              <div className="flex gap-1.5 flex-wrap">
-                {['Apr 2015', 'Apr 2019', 'Apr 2010'].map(pill => (
-                  <span key={pill} className="px-2 py-1 rounded-md font-mono text-[10px] border"
-                    style={{ background: 'rgba(29,158,117,0.03)', borderColor: 'rgba(29,158,117,0.10)', color: 'rgba(29,158,117,0.5)' }}>
-                    {pill}
-                  </span>
-                ))}
-              </div>
-            </motion.button>
+              <span className="text-[11px] uppercase tracking-widest font-sans" style={{ color: 'rgba(255,255,255,0.3)' }}>Market Intel</span>
+              <motion.div animate={{ rotate: marketOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />
+              </motion.div>
+            </button>
+            <AnimatePresence>
+              {marketOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}
+                  className="space-y-6 overflow-hidden"
+                >
+                  <MarketPulseBoard />
+                  <SeasonalPatterns />
+                  <MarketNewsFeed maxItems={5} fearType={fearType} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* ── Streak Tracker ───────────────────────────────────────── */}

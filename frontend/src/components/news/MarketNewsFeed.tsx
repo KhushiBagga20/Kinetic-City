@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { fetchMarketNews, getFearFraming, type NewsItem } from '../../lib/newsAPI'
+import { SkeletonCard } from '../Skeleton'
 
 /* ── Category config ──────────────────────────────────────────────────────── */
 
@@ -191,7 +192,11 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
         }}
       >
         {loading ? (
-          <>{Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}</>
+          <div className="space-y-3" style={{ padding: '12px 16px' }}>
+            <SkeletonCard height={80} />
+            <SkeletonCard height={80} />
+            <SkeletonCard height={80} />
+          </div>
         ) : error ? (
           <div className="text-center py-10 px-6">
             <p className="font-sans text-sm text-white/25 mb-3">Could not load news. Tap to retry.</p>

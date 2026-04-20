@@ -140,6 +140,22 @@ interface AppState {
   empathyPulse: boolean
   setEmpathyPulse: (v: boolean) => void
 
+  // ── Gamification ──────────────────────────────────────────────────────────
+  xpPoints: number
+  acknowledgedStreakMilestones: number[]
+  dailyActions: { date: string; completed: string[] }
+  addXP: (amount: number) => void
+  acknowledgeMilestone: (n: number) => void
+  completeDailyAction: (action: string) => void
+
+  // ── Onboarding ─────────────────────────────────────────────────────────────
+  hasCompletedOnboarding: boolean
+  setOnboardingComplete: () => void
+
+  // ── KINU ──────────────────────────────────────────────────────────────────
+  kinuIntroSeen: boolean
+  setKinuIntroSeen: () => void
+
   // ── Dashboard Section ─────────────────────────────────────────────────────
   dashboardSection: string
   setDashboardSection: (section: string) => void
@@ -291,6 +307,7 @@ export const useAppStore = create<AppState>()(
           completedModules: [...deduped, moduleId],
           fearProgress: Math.min(100, s.fearProgress + increment),
         })
+        get().completeDailyAction('learning')
       },
       incrementFearProgress: (amount) => {
         set({ fearProgress: Math.min(100, get().fearProgress + amount) })
@@ -312,10 +329,43 @@ export const useAppStore = create<AppState>()(
       empathyPulse: false,
       setEmpathyPulse: (empathyPulse) => set({ empathyPulse }),
 
+      // ── Gamification ────────────────────────────────────────────────────────
+      xpPoints: 0,
+      acknowledgedStreakMilestones: [],
+      dailyActions: { date: '', completed: [] },
+      addXP: (amount) => set(state => ({ xpPoints: state.xpPoints + amount })),
+      acknowledgeMilestone: (n) => set(state => ({ acknowledgedStreakMilestones: [...state.acknowledgedStreakMilestones, n] })),
+      completeDailyAction: (action) => {
+        const state = get()
+        const today = new Date().toDateString()
+        const current = state.dailyActions.date === today
+          ? state.dailyActions
+          : { date: today, completed: [] }
+        if (current.completed.includes(action)) return
+        const newCompleted = [...current.completed, action]
+        
+        const xpGained = newCompleted.length === 3 ? 50 : 0
+        set({ 
+          dailyActions: { date: today, completed: newCompleted },
+          xpPoints: state.xpPoints + xpGained
+        })
+      },
+
+      // ── Onboarding ───────────────────────────────────────────────────────────
+      hasCompletedOnboarding: false,
+      setOnboardingComplete: () => set({ hasCompletedOnboarding: true }),
+
+      // ── KINU ─────────────────────────────────────────────────────────────────
+      kinuIntroSeen: false,
+      setKinuIntroSeen: () => set({ kinuIntroSeen: true }),
+
       // ── Dashboard Section ───────────────────────────────────────────────────
       dashboardSection: 'home',
       setDashboardSection: (dashboardSection) => {
         set({ dashboardSection })
+        if (dashboardSection === 'portfolio') {
+          get().completeDailyAction('portfolio')
+        }
         // Keep the URL in sync when components call this directly (without using navigate())
         const targetPath = `/dashboard/${dashboardSection}`
         if (window.location.pathname !== targetPath) {
@@ -327,7 +377,10 @@ export const useAppStore = create<AppState>()(
 
       // ── Simulation Result ───────────────────────────────────────────────────
       simulationResult: null,
-      setSimulationResult: (simulationResult) => set({ simulationResult }),
+      setSimulationResult: (simulationResult) => {
+        set({ simulationResult })
+        get().completeDailyAction('simulation')
+      },
 
       // ── Time Machine Result ─────────────────────────────────────────────────
       timeMachineResult: null,
@@ -488,6 +541,14 @@ export const useAppStore = create<AppState>()(
         userAge: state.userAge,
         portfolioPulseView: state.portfolioPulseView,
         dashboardSection: state.dashboardSection,
+        // Onboarding
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        // Gamification
+        xpPoints: state.xpPoints,
+        acknowledgedStreakMilestones: state.acknowledgedStreakMilestones,
+        dailyActions: state.dailyActions,
+        // KINU
+        kinuIntroSeen: state.kinuIntroSeen,
         // Fix 4 — Card customisation
         cardStyle: state.cardStyle,
         cardHeadline: state.cardHeadline,

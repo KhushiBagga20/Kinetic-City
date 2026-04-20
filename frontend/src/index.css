@@ -153,3 +153,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Minimum tap target for primary/interactive buttons — toggle switches explicitly opt out */
 button:not([data-toggle]) { min-height: 44px; }
+
+/* Gradient-sweep shimmer for skeleton loaders */
+@keyframes shimmer {
+  from { background-position: 200% 0 }
+  to   { background-position: -200% 0 }
+}

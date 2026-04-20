@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../../store/useAppStore'
@@ -20,12 +20,20 @@ export default function ModuleJourney() {
   const [kinuReaction, setKinuReaction] = useState<string | null>(null)
   const [kinuLoading, setKinuLoading] = useState(false)
   const [completing, setCompleting] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
 
   useEffect(() => {
     if (!activeModuleId) navigate('/dashboard/learn', { replace: true })
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
     setKinuReaction(null)
   }, [activeModuleId, navigate])
+
+  // Auto-dismiss celebration and navigate back
+  useEffect(() => {
+    if (!showCelebration) return
+    const t = setTimeout(() => { setShowCelebration(false); navigate('/dashboard/learn') }, 2500)
+    return () => clearTimeout(t)
+  }, [showCelebration, navigate])
 
   const activeModuleIndex = track.findIndex(m => m.id === activeModuleId)
   const isModuleValid = activeModuleId && track.some(m => m.id === activeModuleId)
@@ -65,8 +73,12 @@ export default function ModuleJourney() {
 
   const handleComplete = () => {
     setCompleting(true)
-    if (!isCompleted) completeModule(currentModule.id, (currentModule as any).fearProgressIncrement)
-    setTimeout(() => navigate('/dashboard/learn'), 400)
+    if (!isCompleted) {
+      completeModule(currentModule.id, (currentModule as any).fearProgressIncrement)
+      setShowCelebration(true)
+    } else {
+      navigate('/dashboard/learn')
+    }
   }
 
   const goToModule = (moduleId: string) => {
@@ -75,6 +87,7 @@ export default function ModuleJourney() {
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -274,5 +287,59 @@ export default function ModuleJourney() {
         ) : <div />}
       </div>
     </motion.div>
+
+      {/* ── Celebration overlay ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => { setShowCelebration(false); navigate('/dashboard/learn') }}
+            className="fixed inset-0 z-[400] flex flex-col items-center justify-center cursor-pointer"
+            style={{ background: 'rgba(0,22,27,0.92)' }}
+          >
+            {/* Radial glow */}
+            <div style={{ background: 'radial-gradient(circle at 50% 50%, rgba(192,241,142,0.12) 0%, transparent 70%)', position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+
+            {/* Checkmark circle */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 22, delay: 0.1 }}
+              className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+              style={{ background: 'rgba(192,241,142,0.12)', border: '2px solid rgba(192,241,142,0.5)' }}
+            >
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <motion.path
+                  d="M10 20 L17 27 L30 14"
+                  stroke="#c0f18e"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                />
+              </svg>
+            </motion.div>
+
+            {/* +50 XP badge */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: [0, 1.2, 1] }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="text-[22px] font-bold mb-4 px-5 py-2 rounded-full"
+              style={{ background: 'rgba(192,241,142,0.1)', color: '#c0f18e', border: '1px solid rgba(192,241,142,0.25)' }}
+            >
+              +50 XP
+            </motion.div>
+
+            <p className="font-sans text-white/40 text-[13px]">Tap anywhere to continue</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

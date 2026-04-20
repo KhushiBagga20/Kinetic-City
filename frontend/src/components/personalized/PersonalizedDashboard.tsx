@@ -14,6 +14,7 @@ import Sandbox from './pages/Sandbox'
 import PortfolioPage from './pages/PortfolioPage'
 import FearProfilePage from './pages/FearProfilePage'
 import HarvestRoom from './pages/HarvestRoom'
+import OnboardingFlow from './OnboardingFlow'
 import HistoricalSimulators from './pages/HistoricalSimulators'
 import ComparePage from './pages/ComparePage'
 import CalculatorsPage from './pages/CalculatorsPage'
@@ -25,6 +26,7 @@ import DotGrid from '../shared/DotGrid'
 import {
   LineChart, Clock, ChevronDown, ChevronRight, X, User,
   LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check, Settings,
+  Home, BookOpen, Zap
 } from 'lucide-react'
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
@@ -43,6 +45,25 @@ const SIMULATE_ITEMS = [
   { id: 'time-machine', label: 'Time Machine',    desc: '₹500 through real market crashes',      icon: Clock },
 ]
 
+const MOBILE_NAV = [
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'learn', label: 'Learn', icon: BookOpen },
+  { id: 'portfolio', label: 'Portfolio', icon: BarChart3 },
+  { id: 'kinu', label: 'Ask KINU', icon: Zap },
+]
+const SIMULATE_SUB = [
+  { id: 'simulation', label: 'My Simulation' },
+  { id: 'time-machine', label: 'Time Machine' },
+  { id: 'sandbox', label: 'Sandbox' },
+  { id: 'harvest', label: 'Harvest Room' },
+  { id: 'historical', label: 'Historical' },
+]
+const MOBILE_BOTTOM = [
+  { id: 'fear-profile', label: 'Fear Profile' },
+  { id: 'my-card', label: 'My Card' },
+  { id: 'roadmap', label: 'Roadmap' },
+]
+
 /* ── Active state resolver ─────────────────────────────────────────────────── */
 
 function getActiveTab(section: string): string | null {
@@ -59,9 +80,12 @@ function getActiveTab(section: string): string | null {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 export default function PersonalizedDashboard() {
+  const isTouchDevice = useRef(typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches)
+
   const navigate = useNavigate()
   const dashboardSection = useAppStore(s => s.dashboardSection)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
+  const hasCompletedOnboarding = useAppStore(s => s.hasCompletedOnboarding)
   const userName = useAppStore(s => s.userName) || ''
   const userEmail = useAppStore(s => s.userEmail) || ''
   const displayName = userName && userName !== 'Explorer' ? userName.split(' ')[0] : ''
@@ -85,6 +109,7 @@ export default function PersonalizedDashboard() {
   /* ── Dropdown state — only one open at a time ─────────────────────── */
   const [openDropdown, setOpenDropdown] = useState<'simulate' | 'profile' | null>(null)
   const [mobileDrawer, setMobileDrawer] = useState(false)
+  const [simOpen, setSimOpen] = useState(false)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
@@ -155,6 +180,7 @@ export default function PersonalizedDashboard() {
 
   return (
     <div className="min-h-screen relative" style={{ background: 'var(--bg)' }}>
+      {!hasCompletedOnboarding && fearType && <OnboardingFlow />}
       <DotGrid />
 
       {/* ══════════════════════════════════════════════════════════════════
@@ -172,7 +198,7 @@ export default function PersonalizedDashboard() {
         }}
       >
         {/* ── Left: KINETIC logo ──────────────────────────────────────── */}
-        <button onClick={() => nav('home')} className="flex items-center gap-2 shrink-0">
+        <button onClick={() => nav('home')} className="flex items-center gap-2 shrink-0" style={{ touchAction: 'manipulation' }}>
           <div className="w-[18px] h-[18px] flex items-center justify-center" style={{ background: 'var(--accent)' }}>
             <div className="w-[5px] h-[12px] skew-x-[15deg]" style={{ background: '#00161b' }} />
           </div>
@@ -187,15 +213,15 @@ export default function PersonalizedDashboard() {
           {/* Simulate (with dropdown) */}
           <div
             className="relative"
-            onMouseEnter={openSimulate}
-            onMouseLeave={scheduleCloseSimulate}
+            onMouseEnter={() => !isTouchDevice.current ? openSimulate() : undefined}
+            onMouseLeave={() => !isTouchDevice.current ? scheduleCloseSimulate() : undefined}
           >
             <NavItem
               label="Simulate"
               active={activeTab === 'simulate'}
               hasChevron
               chevronOpen={openDropdown === 'simulate'}
-              onClick={() => nav('simulation')}
+              onClick={() => isTouchDevice.current ? setOpenDropdown(d => d === 'simulate' ? null : 'simulate') : undefined}
             />
 
             {/* Simulate Dropdown */}
@@ -231,7 +257,7 @@ export default function PersonalizedDashboard() {
                           <button
                             onClick={() => nav(item.id)}
                             className="w-full flex items-start gap-3 text-left transition-[background-color] duration-150"
-                            style={{ padding: '10px 14px', borderRadius: 10 }}
+                            style={{ padding: '10px 14px', borderRadius: 10, touchAction: 'manipulation' }}
                             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
@@ -254,7 +280,7 @@ export default function PersonalizedDashboard() {
                     <button
                       onClick={() => nav('historical')}
                       className="w-full flex items-start gap-3 text-left transition-[background-color] duration-150"
-                      style={{ padding: '10px 14px', borderRadius: 10 }}
+                      style={{ padding: '10px 14px', borderRadius: 10, touchAction: 'manipulation' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
@@ -294,6 +320,7 @@ export default function PersonalizedDashboard() {
               onClick={() => setOpenDropdown(prev => prev === 'profile' ? null : 'profile')}
               className="transition-all duration-150"
               style={{
+                touchAction: 'manipulation',
                 width: 36, height: 36, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: isAuthenticated ? `${ftColor}33` : 'rgba(255,255,255,0.06)',
@@ -385,7 +412,7 @@ export default function PersonalizedDashboard() {
                         <button
                           onClick={() => { signOut(); setView('landing'); setOpenDropdown(null) }}
                           className="w-full flex items-center gap-3 text-left transition-[background-color] duration-150"
-                          style={{ padding: '8px 10px', borderRadius: 8, color: 'var(--danger)' }}
+                          style={{ padding: '8px 10px', borderRadius: 8, color: 'var(--danger)', touchAction: 'manipulation' }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(226,75,74,0.06)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
@@ -396,7 +423,7 @@ export default function PersonalizedDashboard() {
                         <button
                           onClick={() => nav('portfolio')}
                           className="w-full flex items-center gap-3 text-left transition-[background-color] duration-150"
-                          style={{ padding: '8px 10px', borderRadius: 8, color: 'var(--accent)' }}
+                          style={{ padding: '8px 10px', borderRadius: 8, color: 'var(--accent)', touchAction: 'manipulation' }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
@@ -414,7 +441,7 @@ export default function PersonalizedDashboard() {
           {/* Hamburger — mobile only */}
           <button
             className="md:hidden flex flex-col justify-center items-center"
-            style={{ width: 34, height: 34, gap: 4 }}
+            style={{ width: 34, height: 34, gap: 4, touchAction: 'manipulation' }}
             onClick={() => setMobileDrawer(true)}
           >
             <span className="block rounded-full" style={{ width: 18, height: 2, background: 'rgba(255,255,255,0.65)' }} />
@@ -453,7 +480,7 @@ export default function PersonalizedDashboard() {
               {/* Header */}
               <div className="flex items-center justify-between" style={{ padding: '0 20px', height: 60 }}>
                 <span className="font-display font-bold text-[14px] tracking-[0.12em] text-white">KINETIC</span>
-                <button onClick={() => setMobileDrawer(false)} className="text-white/50">
+                <button onClick={() => setMobileDrawer(false)} className="text-white/50" style={{ touchAction: 'manipulation' }}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -461,19 +488,105 @@ export default function PersonalizedDashboard() {
 
               {/* Nav items */}
               <div className="flex-1 overflow-y-auto" style={{ padding: '8px 12px' }}>
-                <MobileNavItem label="Home" active={activeTab === 'home'} onClick={() => nav('home')} />
+                {MOBILE_NAV.map((item) => {
+                  const isActive = dashboardSection === item.id
+                  return (
+                    <div key={item.id}>
+                      <button
+                        onClick={() => nav(item.id)}
+                        className="w-full flex items-center gap-3 text-left transition-all duration-150"
+                        style={{
+                          minHeight: 48,
+                          padding: '0 16px',
+                          background: isActive ? 'rgba(192,241,142,0.08)' : 'transparent',
+                          color: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.45)',
+                          borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                          touchAction: 'manipulation'
+                        }}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-sans text-[15px] font-medium">{item.label}</span>
+                      </button>
 
-                {/* Simulate group */}
-                <div className="mt-1">
-                  <p className="font-sans text-[11px] font-medium uppercase tracking-wider px-3 py-2" style={{ color: 'rgba(255,255,255,0.2)' }}>Simulate</p>
-                  {SIMULATE_ITEMS.map(item => (
-                    <MobileNavItem key={item.id} label={item.label} active={dashboardSection === item.id} indent onClick={() => nav(item.id)} />
-                  ))}
-                </div>
-
-                <MobileNavItem label="Learn" active={activeTab === 'learn'} onClick={() => nav('learn')} />
-                <MobileNavItem label="KINU" active={activeTab === 'kinu'} onClick={() => nav('kinu')} />
-                <MobileNavItem label="Portfolio" active={activeTab === 'portfolio'} onClick={() => nav('portfolio')} />
+                      {item.id === 'home' && (
+                        <div className="flex flex-col">
+                          <button
+                            onClick={() => setSimOpen(!simOpen)}
+                            className="w-full flex items-center justify-between transition-all duration-150"
+                            style={{
+                              minHeight: 48,
+                              padding: '0 16px',
+                              background: 'transparent',
+                              color: 'rgba(255,255,255,0.45)',
+                              borderLeft: '2px solid transparent',
+                              touchAction: 'manipulation'
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <LineChart className="w-5 h-5" />
+                              <span className="font-sans text-[15px] font-medium">Simulate</span>
+                            </div>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${simOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {simOpen && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                {SIMULATE_SUB.map(sub => {
+                                  const isSubActive = dashboardSection === sub.id
+                                  return (
+                                    <button
+                                      key={sub.id}
+                                      onClick={() => nav(sub.id)}
+                                      className="w-full flex items-center text-left transition-all duration-150 pl-8"
+                                      style={{
+                                        minHeight: 48,
+                                        paddingRight: '16px',
+                                        background: isSubActive ? 'rgba(192,241,142,0.08)' : 'transparent',
+                                        color: isSubActive ? 'var(--accent)' : 'rgba(255,255,255,0.45)',
+                                        borderLeft: isSubActive ? '2px solid var(--accent)' : '2px solid transparent',
+                                        touchAction: 'manipulation'
+                                      }}
+                                    >
+                                      <span className="font-sans text-[14px] font-medium">{sub.label}</span>
+                                    </button>
+                                  )
+                                })}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 0 8px 0' }} />
+                
+                {MOBILE_BOTTOM.map(item => {
+                  const isActive = dashboardSection === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => nav(item.id)}
+                      className="w-full flex items-center text-left transition-all duration-150"
+                      style={{
+                        minHeight: 48,
+                        padding: '0 16px',
+                        background: isActive ? 'rgba(192,241,142,0.08)' : 'transparent',
+                        color: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.5)',
+                        borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      <span className="font-sans text-[13px] font-medium">{item.label}</span>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Bottom: Profile section */}
@@ -494,12 +607,6 @@ export default function PersonalizedDashboard() {
                   </div>
                 </div>
 
-                {/* Quick links */}
-                <div style={{ padding: '4px 8px 8px' }}>
-                  <MobileNavItem label="My Fear Profile" onClick={() => nav('fear-profile')} />
-                  <MobileNavItem label="My Kinetic Card" onClick={() => nav('my-card')} />
-                </div>
-
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 12px' }} />
 
                 {/* Auth */}
@@ -507,13 +614,13 @@ export default function PersonalizedDashboard() {
                   {isAuthenticated ? (
                     <button onClick={() => { signOut(); setView('landing'); setMobileDrawer(false) }}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl font-sans text-[13px] font-medium"
-                      style={{ color: 'var(--danger)' }}>
+                      style={{ color: 'var(--danger)', touchAction: 'manipulation' }}>
                       <LogOut className="w-4 h-4" /> Sign out
                     </button>
                   ) : (
                     <button onClick={() => nav('portfolio')}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl font-sans text-[13px] font-medium"
-                      style={{ color: 'var(--accent)' }}>
+                      style={{ color: 'var(--accent)', touchAction: 'manipulation' }}>
                       <LogIn className="w-4 h-4" /> Sign in or create account
                     </button>
                   )}
@@ -527,15 +634,49 @@ export default function PersonalizedDashboard() {
       {/* ══════════════════════════════════════════════════════════════════
           MAIN CONTENT — padding-top: 60px for fixed navbar
           ══════════════════════════════════════════════════════════════════ */}
-      <main className="relative z-[1] pb-8 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
+      <main className="relative z-[1] pb-16 md:pb-0 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
         <div className="max-w-[1200px] mx-auto py-8">
           <AnimatePresence mode="wait">
-            {renderSection()}
+            <motion.div
+              key={dashboardSection}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              {renderSection()}
+            </motion.div>
           </AnimatePresence>
         </div>
       </main>
 
       {dashboardSection !== 'kinu' && <KinuFloatingButton />}
+
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[150] flex items-center justify-around"
+        style={{ height: 64, background: 'rgba(0,22,27,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        {[
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'learn', label: 'Learn', icon: BookOpen },
+          { id: 'simulation', label: 'Simulate', icon: Zap },
+          { id: 'portfolio', label: 'Portfolio', icon: BarChart3 },
+          { id: 'kinu', label: 'KINU', icon: null },  // special: render 'K' in a circle
+        ].map(tab => {
+          const isActive = dashboardSection === tab.id || (tab.id === 'simulation' && SIMULATE_SECTIONS.includes(dashboardSection))
+          return (
+            <button key={tab.id}
+              onClick={() => { navigate('/dashboard/' + tab.id); setMobileDrawer(false) }}
+              className="flex flex-col items-center gap-1 px-3 py-2"
+              style={{ touchAction: 'manipulation', color: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.35)' }}
+            >
+              {tab.icon
+                ? <tab.icon className="w-5 h-5" />
+                : <span className="w-5 h-5 rounded-lg flex items-center justify-center text-[11px] font-black" style={{ background: isActive ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: isActive ? '#0a1a00' : 'rgba(255,255,255,0.35)' }}>K</span>
+              }
+              <span className="text-[10px] font-medium">{tab.label}</span>
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }
@@ -559,6 +700,7 @@ function NavItem({
       onMouseLeave={() => setHovered(false)}
       className="relative font-sans text-[15px] font-medium transition-[color] duration-150 flex items-center"
       style={{
+        touchAction: 'manipulation',
         padding: '0 32px',
         height: 60,
         color: active ? 'var(--accent)' : hovered ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)',
@@ -595,7 +737,7 @@ function ProfileRow({
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3 text-left transition-[background-color] duration-150"
-      style={{ padding: '8px 10px', borderRadius: 8 }}
+      style={{ padding: '8px 10px', borderRadius: 8, touchAction: 'manipulation' }}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
@@ -610,33 +752,4 @@ function ProfileRow({
 /** Thin divider line */
 function Divider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 8px' }} />
-}
-
-/** Mobile drawer nav item */
-function MobileNavItem({
-  label, active, indent, onClick,
-}: {
-  label: string; active?: boolean; indent?: boolean; onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-left transition-[background-color,color] duration-150"
-      style={{
-        height: 48,
-        display: 'flex',
-        alignItems: 'center',
-        padding: indent ? '0 16px 0 32px' : '0 16px',
-        borderRadius: 10,
-        fontSize: indent ? 13 : 15,
-        fontWeight: 500,
-        color: active ? 'var(--accent)' : 'rgba(255,255,255,0.45)',
-        background: active ? 'rgba(192,241,142,0.06)' : 'transparent',
-      }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
-    >
-      {label}
-    </button>
-  )
 }

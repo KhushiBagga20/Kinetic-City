@@ -207,6 +207,14 @@ export default function LearnPage() {
   const [search, setSearch] = useState('')
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null)
   const [catFilter, setCatFilter] = useState<string>('all')
+  const [hoveredModule, setHoveredModule] = useState<string | null>(null)
+
+  const FEAR_NAMES: Record<FearType, string> = {
+    loss: 'Loss Avoider',
+    jargon: 'Clarity Seeker',
+    scam: 'Pattern Detector',
+    trust: 'Independence Guardian',
+  }
 
   const trackName = TRACK_NAMES[fearType as FearTrack] || 'Your Track'
 
@@ -467,11 +475,14 @@ export default function LearnPage() {
           const completed = completedModules || []
           const completedCount = trackModules.filter(m => completed.includes(m.id)).length
           const pct = Math.round((completedCount / trackModules.length) * 100)
+          const trackTotalModules = trackModules.length
+          // Index of the first incomplete module (used for opacity logic)
+          const firstIncompleteIndex = trackModules.findIndex(m => !completed.includes(m.id))
 
           return (
             <motion.div key="modules" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
 
-              {/* Progress header */}
+              {/* Progress header — always visible */}
               <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -493,78 +504,131 @@ export default function LearnPage() {
                 </div>
               </div>
 
-              {/* Module cards */}
-              <div className="space-y-3">
-                {trackModules.map((mod, i) => {
-                  const isDone = completed.includes(mod.id)
-                  const isNext = !isDone && completed.length === i
-                  return (
-                    <motion.button
-                      key={mod.id}
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04, duration: 0.3 }}
-                      onClick={() => {
-                        useAppStore.getState().setActiveModuleId(mod.id)
-                        navigate(`/dashboard/module/${mod.id}`)
-                      }}
-                      className="w-full text-left rounded-2xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 group"
-                      style={{
-                        background: isDone
-                          ? 'rgba(29,158,117,0.06)'
-                          : isNext
-                          ? 'rgba(192,241,142,0.05)'
-                          : 'var(--surface)',
-                        border: `1px solid ${isDone ? 'rgba(29,158,117,0.2)' : isNext ? 'rgba(192,241,142,0.15)' : 'var(--border)'}`,
-                      }}
-                      onMouseEnter={e => {
-                        if (!isDone) e.currentTarget.style.borderColor = 'rgba(192,241,142,0.25)'
-                        e.currentTarget.style.transform = 'translateX(2px)'
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = isDone ? 'rgba(29,158,117,0.2)' : isNext ? 'rgba(192,241,142,0.15)' : 'var(--border)'
-                        e.currentTarget.style.transform = 'none'
-                      }}
-                    >
-                      {/* Number / check */}
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-mono font-bold text-sm"
-                        style={{
-                          background: isDone ? 'rgba(29,158,117,0.15)' : isNext ? 'rgba(192,241,142,0.1)' : 'rgba(255,255,255,0.04)',
-                          color: isDone ? '#1D9E75' : isNext ? '#c0f18e' : 'rgba(255,255,255,0.3)',
-                          border: `1px solid ${isDone ? 'rgba(29,158,117,0.3)' : isNext ? 'rgba(192,241,142,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                        }}>
-                        {isDone ? <Check className="w-4 h-4" /> : i + 1}
-                      </div>
-
-                      {/* Title + meta */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-sans font-medium text-sm truncate"
-                          style={{ color: isDone ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.9)' }}>
-                          {mod.title}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="font-sans text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                            {mod.readTime}
-                          </span>
-                          {isNext && (
-                            <span className="font-mono text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider"
-                              style={{ background: 'rgba(192,241,142,0.08)', color: '#c0f18e', border: '1px solid rgba(192,241,142,0.15)' }}>
-                              Up Next
-                            </span>
-                          )}
-                          {isDone && (
-                            <span className="font-sans text-[10px]" style={{ color: '#1D9E75' }}>Completed</span>
-                          )}
+              {/* PART 2: Track complete state */}
+              {completedCount === trackTotalModules && trackTotalModules > 0 ? (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
+                  <div className="w-20 h-20 rounded-3xl mx-auto mb-6 flex items-center justify-center"
+                    style={{ background: 'rgba(192,241,142,0.1)', border: '2px solid rgba(192,241,142,0.3)' }}>
+                    <Check className="w-8 h-8" style={{ color: '#c0f18e' }} />
+                  </div>
+                  <h2 className="font-display font-bold text-4xl text-white mb-3">Track complete.</h2>
+                  <p className="text-[15px] max-w-[340px] mx-auto leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    {({
+                      loss: 'You now understand why staying invested is your superpower.',
+                      jargon: 'The jargon is gone. What\'s left is just math — and you know the math.',
+                      scam: 'Your pattern detection is now backed by real market knowledge.',
+                      trust: 'You have the data. You have the independence. Build your own path.',
+                    } as Record<FearType, string>)[fearType]}
+                  </p>
+                  <div className="mt-10">
+                    <p className="text-[11px] uppercase tracking-widest text-white/25 mb-4">Explore other tracks</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {(['loss', 'jargon', 'scam', 'trust'] as FearType[]).filter(f => f !== fearType).map(f => (
+                        <div key={f} className="rounded-2xl p-4 border text-left"
+                          style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                          <p className="text-[13px] font-medium text-white/60">{FEAR_NAMES[f]}</p>
+                          <p className="text-[11px] text-white/30 mt-1">10 modules</p>
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                /* PART 3: Module cards with visual states */
+                <div className="space-y-3">
+                  {trackModules.map((mod, i) => {
+                    const isDone = completed.includes(mod.id)
+                    // First incomplete module that isn't done
+                    const isNext = !isDone && firstIncompleteIndex === i
+                    // Unreachable: more than 1 position ahead of first incomplete
+                    const isUnreachable = !isDone && !isNext && firstIncompleteIndex !== -1 && i > firstIncompleteIndex + 1
+                    return (
+                      <motion.button
+                        key={mod.id}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.04, duration: 0.3 }}
+                        onClick={() => {
+                          useAppStore.getState().setActiveModuleId(mod.id)
+                          navigate(`/dashboard/module/${mod.id}`)
+                        }}
+                        onMouseEnter={() => setHoveredModule(mod.id)}
+                        onMouseLeave={() => setHoveredModule(null)}
+                        className="w-full text-left rounded-2xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 group"
+                        style={{
+                          background: isDone
+                            ? 'rgba(29,158,117,0.06)'
+                            : isNext
+                            ? 'rgba(192,241,142,0.05)'
+                            : 'var(--surface)',
+                          border: `1px solid ${isDone ? 'rgba(29,158,117,0.2)' : isNext ? 'rgba(192,241,142,0.15)' : 'var(--border)'}`,
+                          // PART 3B: left accent border for next module
+                          borderLeft: isNext ? '3px solid #c0f18e' : undefined,
+                          // PART 3C: dim unreachable modules
+                          opacity: isUnreachable ? 0.5 : 1,
+                        }}
+                      >
+                        {/* Number / check */}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-mono font-bold text-sm"
+                          style={{
+                            background: isDone ? 'rgba(29,158,117,0.15)' : isNext ? 'rgba(192,241,142,0.1)' : 'rgba(255,255,255,0.04)',
+                            color: isDone ? '#1D9E75' : isNext ? '#c0f18e' : 'rgba(255,255,255,0.3)',
+                            border: `1px solid ${isDone ? 'rgba(29,158,117,0.3)' : isNext ? 'rgba(192,241,142,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                          }}>
+                          {isDone ? <Check className="w-4 h-4" /> : i + 1}
+                        </div>
 
-                      {/* Arrow */}
-                      <ChevronRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
-                        style={{ color: isDone ? 'rgba(29,158,117,0.5)' : 'rgba(255,255,255,0.15)' }} />
-                    </motion.button>
-                  )
-                })}
-              </div>
+                        {/* Title + preview + meta */}
+                        <div className="flex-1 min-w-0">
+                          {/* PART 3A: strikethrough when done; inline Next badge */}
+                          <p className="font-sans font-medium text-sm"
+                            style={{
+                              color: isDone ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.9)',
+                              textDecoration: isDone ? 'line-through' : 'none',
+                            }}>
+                            <span>{mod.title}</span>
+                            {isNext && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 align-middle"
+                                style={{ background: 'rgba(192,241,142,0.1)', color: '#c0f18e' }}>
+                                Next
+                              </span>
+                            )}
+                          </p>
+
+                          {/* PART 4: hover preview */}
+                          <AnimatePresence>
+                            {hoveredModule === mod.id && (mod as any).preview && (
+                              <motion.p
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="text-[12px] mt-1 overflow-hidden"
+                                style={{ color: 'rgba(255,255,255,0.4)' }}
+                              >
+                                {(mod as any).preview}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="font-sans text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                              {mod.readTime}
+                            </span>
+                            {isDone && (
+                              <span className="font-sans text-[10px]" style={{ color: '#1D9E75' }}>Completed</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Arrow */}
+                        <ChevronRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
+                          style={{ color: isDone ? 'rgba(29,158,117,0.5)' : 'rgba(255,255,255,0.15)' }} />
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              )}
 
             </motion.div>
           )
