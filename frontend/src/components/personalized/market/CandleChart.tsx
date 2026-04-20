@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { createChart, type IChartApi, type ISeriesApi, CandlestickSeries, ColorType } from 'lightweight-charts'
+import { createChart, type IChartApi, type ISeriesApi, CandlestickSeries, AreaSeries, ColorType } from 'lightweight-charts'
 import type { CandleData } from '../../../hooks/useLiveMarket'
 
 const INTERVALS = [
-  { label: '1m', interval: '1', days: 1 },
-  { label: '5m', interval: '5', days: 3 },
-  { label: '15m', interval: '15', days: 5 },
-  { label: '1h', interval: '60', days: 30 },
-  { label: '1D', interval: '240', days: 180 },
+  { label: '1D',  interval: '5',   days: 1   },
+  { label: '5D',  interval: '15',  days: 5   },
+  { label: '1M',  interval: '60',  days: 30  },
+  { label: '6M',  interval: '240', days: 180 },
+  { label: 'YTD', interval: '240', days: 0   },
 ]
 
 interface Props {
@@ -20,8 +20,8 @@ interface Props {
 export default function CandleChart({ exchange, token, lp, fetchCandles }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
-  const [activeIdx, setActiveIdx] = useState(1)
+  const seriesRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Area'> | null>(null)
+  const [activeIdx, setActiveIdx] = useState(0) // Default to '1D'
   const [loading, setLoading] = useState(true)
 
   // Create chart once on mount
@@ -38,13 +38,6 @@ export default function CandleChart({ exchange, token, lp, fetchCandles }: Props
     })
     chartRef.current = chart
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: '#1D9E75', downColor: '#E24B4A',
-      wickUpColor: '#1D9E75', wickDownColor: '#E24B4A',
-      borderVisible: false,
-    })
-    seriesRef.current = series
-
     const ro = new ResizeObserver(entries => {
       for (const e of entries) chart.applyOptions({ width: e.contentRect.width })
     })
@@ -59,11 +52,67 @@ export default function CandleChart({ exchange, token, lp, fetchCandles }: Props
     const cfg = INTERVALS[activeIdx]
     setLoading(true)
 
-    fetchCandles(exchange, token, cfg.interval, cfg.days).then(candles => {
-      if (cancelled || !seriesRef.current) return
-      const mapped = candles.map(c => ({ time: c.time as any, open: c.o, high: c.h, low: c.l, close: c.c }))
-      seriesRef.current.setData(mapped)
-      chartRef.current?.timeScale().fitContent()
+    const ytdDays = Math.floor(
+      (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000
+    )
+    const daysToFetch = cfg.label === 'YTD' ? ytdDays : cfg.days
+
+    fetchCandles(exchange, token, cfg.interval, daysToFetch).then(candles => {
+      if (cancelled || !chartRef.current) return
+
+      if (seriesRef.current) {
+        try { chartRef.current.removeSeries(seriesRef.current) } catch {}
+        seriesRef.current = null
+      }
+
+      if (!candles || candles.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      const valid = candles
+        .filter(c => c.time && !isNaN((c as any).open ?? c.o) && !isNaN((c as any).close ?? c.c))
+        .map(c => ({
+          time: c.time > 1e12 ? Math.floor(c.time / 1000) : c.time,
+          open:  parseFloat((c as any).open  ?? c.o),
+          high:  parseFloat((c as any).high  ?? c.h),
+          low:   parseFloat((c as any).low   ?? c.l),
+          close: parseFloat((c as any).close ?? c.c),
+        }))
+        .sort((a, b) => a.time - b.time)
+        .filter((c, i, arr) => i === 0 || c.time !== arr[i-1].time)
+
+      if (valid.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      const isArea = cfg.label === '1D'
+
+      if (isArea) {
+        const areaSeries = chartRef.current.addSeries(AreaSeries, {
+          lineColor: '#1D9E75',
+          topColor: 'rgba(29, 158, 117, 0.4)',
+          bottomColor: 'rgba(29, 158, 117, 0.0)',
+          priceLineColor: '#1D9E75',
+        })
+        seriesRef.current = areaSeries
+        
+        const mapped = valid.map(c => ({ time: c.time as any, value: c.close }))
+        areaSeries.setData(mapped)
+      } else {
+        const candleSeries = chartRef.current.addSeries(CandlestickSeries, {
+          upColor: '#1D9E75', downColor: '#E24B4A',
+          wickUpColor: '#1D9E75', wickDownColor: '#E24B4A',
+          borderVisible: false,
+        })
+        seriesRef.current = candleSeries
+        
+        const mapped = valid.map(c => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
+        candleSeries.setData(mapped)
+      }
+
+      try { chartRef.current.timeScale().fitContent() } catch {}
       setLoading(false)
     })
 
@@ -72,11 +121,18 @@ export default function CandleChart({ exchange, token, lp, fetchCandles }: Props
 
   // Update last candle close on live tick
   useEffect(() => {
-    if (!lp || !seriesRef.current) return
+    if (!chartRef.current || !lp || !seriesRef.current) return
     const price = parseFloat(lp)
     if (isNaN(price)) return
-    seriesRef.current.update({ time: Math.floor(Date.now() / 1000) as any, open: price, high: price, low: price, close: price })
-  }, [lp])
+    
+    const cfg = INTERVALS[activeIdx]
+    const timeVal = Math.floor(Date.now() / 1000) as any
+    if (cfg.label === '1D') {
+      try { (seriesRef.current as ISeriesApi<'Area'>).update({ time: timeVal, value: price }) } catch {}
+    } else {
+      try { (seriesRef.current as ISeriesApi<'Candlestick'>).update({ time: timeVal, open: price, high: price, low: price, close: price }) } catch {}
+    }
+  }, [lp, activeIdx])
 
   return (
     <div>

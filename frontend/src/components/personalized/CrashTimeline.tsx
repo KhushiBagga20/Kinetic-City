@@ -10,6 +10,22 @@ const SEVERITY_SIZE: Record<CrashEvent['severity'], number> = {
   extreme: 14,
 }
 
+const getShortName = (name: string) => {
+  const n = name.toLowerCase()
+  if (n.includes('dot-com')) return 'Dot-com'
+  if (n.includes('9/11')) return '9/11'
+  if (n.includes('2004')) return '2004 Elec.'
+  if (n.includes('2006')) return '2006'
+  if (n.includes('2008')) return '2008 GFC'
+  if (n.includes('2010')) return '2010'
+  if (n.includes('2015') || n.includes('chinese')) return '2015-16'
+  if (n.includes('demonet')) return 'Demonet.'
+  if (n.includes('il&fs')) return 'IL&FS'
+  if (n.includes('covid')) return 'COVID-19'
+  if (n.includes('2022')) return '2022'
+  return name.length > 10 ? name.slice(0, 10) : name
+}
+
 // ── Tooltip Component ───────────────────────────────────────────────────────
 
 function CrashTooltip({ crash, position }: { crash: CrashEvent; position: 'above' | 'below' }) {
@@ -87,8 +103,13 @@ function CrashV({
   const circleR = SEVERITY_SIZE[crash.severity]
 
   // Base Y for the horizontal line
-  const baseY = 80
+  const baseY = 150
   const bottomY = baseY + depth
+
+  // Stagger offsets
+  const yOffsets = [30, 55, 80]
+  const labelY = baseY - yOffsets[index % 3]
+  const textAnchor = index === 0 ? 'start' : index === totalCrashes - 1 ? 'end' : 'middle'
 
   // V-shape points
   const leftX = cx - 18
@@ -153,28 +174,20 @@ function CrashV({
         transition={{ duration: 0.4, delay: baseDelay + 0.3 }}
       >
         <text
-          x={cx} y={baseY - 30}
-          textAnchor="middle"
+          x={cx} y={labelY}
+          textAnchor={textAnchor}
           className="font-sans"
-          style={{ fontSize: '8px', fill: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+          style={{ fontSize: '9px', fontWeight: 600, fill: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
         >
-          {crash.name.length > 16 ? crash.name.slice(0, 14) + '…' : crash.name}
+          {getShortName(crash.name)}
         </text>
         <text
-          x={cx - 8} y={baseY - 16}
-          textAnchor="middle"
+          x={cx} y={labelY} dy="11"
+          textAnchor={textAnchor}
           className="font-mono"
-          style={{ fontSize: '9px', fill: 'var(--danger)' }}
+          style={{ fontSize: '8px', fill: 'var(--danger)' }}
         >
-          {crash.niftyPeakToDrop}%
-        </text>
-        <text
-          x={cx + 12} y={baseY - 16}
-          textAnchor="middle"
-          className="font-mono"
-          style={{ fontSize: '9px', fill: 'var(--teal)' }}
-        >
-          {crash.recoveryMonths}m
+          {crash.niftyPeakToDrop}% {crash.recoveryMonths}m
         </text>
       </motion.g>
 
@@ -283,13 +296,14 @@ export default function CrashTimeline() {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: true, margin: '-80px' })
 
-  // Timeline dimensions
-  const svgWidth = 900
-  const svgHeight = 200
-  const baseY = 80
-
+  // Timeline dimensions (dynamic based on crashes length)
   const crashes = useMemo(() => CRASH_HISTORY, [])
   const allVsDelay = 0.8 + crashes.length * 0.2 + 1.2 // time for all Vs to finish
+  
+  const minGap = 80
+  const svgWidth = Math.max(900, (crashes.length + 1) * minGap)
+  const svgHeight = 270
+  const baseY = 150
 
   return (
     <motion.div
@@ -304,7 +318,7 @@ export default function CrashTimeline() {
       <div className="hidden md:block overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
         <div style={{ minWidth: `${svgWidth}px` }}>
           <svg
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            viewBox={`-80 0 ${svgWidth + 160} ${svgHeight}`}
             className="w-full"
             style={{ overflow: 'visible' }}
           >
