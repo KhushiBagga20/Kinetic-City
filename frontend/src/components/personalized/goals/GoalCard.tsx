@@ -42,7 +42,8 @@ export default function GoalCard({ goal }: { goal: Goal }) {
   // SVG progress ring
   const radius = 26
   const circumference = 2 * Math.PI * radius
-  const offset = circumference - (progress / 100) * circumference
+  const ringProgress = Math.max(0.04, progress / 100)
+  const offset = circumference - ringProgress * circumference
 
   return (
     <motion.div
@@ -71,16 +72,21 @@ export default function GoalCard({ goal }: { goal: Goal }) {
 
       {/* Progress ring + stats */}
       <div className="flex items-center gap-4 mb-3">
-        <svg width="64" height="64" className="shrink-0 -rotate-90">
-          <circle cx="32" cy="32" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
-          <motion.circle
-            cx="32" cy="32" r={radius} fill="none" stroke="var(--teal)" strokeWidth="4" strokeLinecap="round"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-          />
-        </svg>
+        <div className="relative w-16 h-16 shrink-0">
+          <svg width="64" height="64" className="-rotate-90 absolute inset-0">
+            <circle cx="32" cy="32" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+            <motion.circle
+              cx="32" cy="32" r={radius} fill="none" stroke="#c0f18e" strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: offset }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Icon className="w-5 h-5" style={{ color: '#c0f18e' }} />
+          </div>
+        </div>
         <div>
           <p className="font-sans text-xs text-white/30 mb-1">
             Required: {formatINR(goal.requiredMonthlySIP)}/month

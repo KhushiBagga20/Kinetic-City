@@ -73,27 +73,41 @@ SUBSCRIBE_KEYS = "NSE|11630#NSE|26000#NSE|2885#NSE|1594#NSE|1333#NSE|11536#NSE|4
 # ═════════════════════════════════════════════════════════════════════════════
 
 def yf_get_quote(token: str) -> dict:
-    """Get current quote from Yahoo Finance for a given Shoonya token."""
+    """Get current quote from Yahoo Finance for a given Shoonya token.
+    Uses 5-day daily history to get accurate previous trading day close.
+    """
     import yfinance as yf
     ticker_sym = SHOONYA_TO_YAHOO.get(token)
     if not ticker_sym:
         return {}
     try:
         t = yf.Ticker(ticker_sym)
-        info = t.fast_info
-        prev_close = info.previous_close or 1
-        lp = info.last_price
-        if not lp:
+
+        # Use 5d daily history to get the last 2 trading days accurately
+        hist = t.history(period='5d', interval='1d', auto_adjust=True)
+        if len(hist) < 2:
             return {}
+
+        today = hist.iloc[-1]
+        prev  = hist.iloc[-2]
+        lp         = float(today['Close'])
+        prev_close = float(prev['Close'])
         pc = round(((lp - prev_close) / prev_close) * 100, 2)
+
+        # For intraday OHLC use fast_info (covers today's session)
+        info = t.fast_info
+        open_price = float(info.open or today['Open'])
+        day_high   = float(info.day_high or today['High'])
+        day_low    = float(info.day_low or today['Low'])
+
         return {
             'stat': 'Ok',
             'tk': token,
             'lp': str(round(lp, 2)),
             'pc': str(pc),
-            'o':  str(round(float(info.open or lp), 2)),
-            'h':  str(round(float(info.day_high or lp), 2)),
-            'l':  str(round(float(info.day_low or lp), 2)),
+            'o':  str(round(open_price, 2)),
+            'h':  str(round(day_high, 2)),
+            'l':  str(round(day_low, 2)),
             'c':  str(round(prev_close, 2)),
             'v':  str(int(info.three_month_average_volume or 0)),
             'source': 'yfinance',
@@ -104,7 +118,9 @@ def yf_get_quote(token: str) -> dict:
 
 
 def yf_get_candles(token: str, interval: str, days: int) -> list:
-    """Get OHLCV candles from Yahoo Finance."""
+    """Get OHLCV candles from Yahoo Finance.
+    Returns timestamps as Unix epoch in SECONDS (not milliseconds).
+    """
     import yfinance as yf
     ticker_sym = SHOONYA_TO_YAHOO.get(token)
     if not ticker_sym:
@@ -142,12 +158,20 @@ def yf_get_candles(token: str, interval: str, days: int) -> list:
                 break
 
         t = yf.Ticker(ticker_sym)
-        hist = t.history(period=period, interval=yf_interval)
+        hist = t.history(period=period, interval=yf_interval, auto_adjust=True)
+
+        is_daily = yf_interval in {'1d', '1wk', '1mo'}
 
         candles = []
         for ts, row in hist.iterrows():
+            if is_daily:
+                time_val = ts.strftime('%Y-%m-%d')
+            else:
+                # Intraday from yFinance is UTC, adjust by +19800 for IST
+                time_val = int(ts.timestamp()) + 19800
+
             candles.append({
-                'time': int(ts.timestamp()),
+                'time': time_val,
                 'o': round(float(row['Open']), 2),
                 'h': round(float(row['High']), 2),
                 'l': round(float(row['Low']), 2),
@@ -184,6 +208,43 @@ def yf_search(query: str, exchange: str) -> list:
     except Exception:
         pass
     return []
+
+
+def calculate_period_change(token: str, period: str) -> float:
+    """Calculate % price change for a given period label (1D/5D/1M/6M/YTD).
+    
+    Returns the percentage change from the start of the period to now.
+    """
+    import yfinance as yf
+    ticker_sym = SHOONYA_TO_YAHOO.get(token)
+    if not ticker_sym:
+        return 0.0
+
+    # Map frontend period label → (yf_period, yf_interval)
+    period_map = {
+        '1D':  ('5d',  '1d'),   # Last 2 trading days
+        '5D':  ('1mo', '1d'),   # Compare 5 trading days ago vs today
+        '1M':  ('2mo', '1d'),   # Compare ~1 month ago vs today
+        '6M':  ('1y',  '1wk'),  # Compare 6 months ago vs today
+        'YTD': ('ytd', '1wk'),  # Compare Jan 1 vs today
+    }
+
+    yf_period, yf_interval = period_map.get(period, ('5d', '1d'))
+
+    try:
+        t = yf.Ticker(ticker_sym)
+        hist = t.history(period=yf_period, interval=yf_interval, auto_adjust=True)
+        if len(hist) < 2:
+            return 0.0
+
+        start_price = float(hist.iloc[0]['Close'])
+        end_price   = float(hist.iloc[-1]['Close'])
+        if start_price == 0:
+            return 0.0
+        return round(((end_price - start_price) / start_price) * 100, 2)
+    except Exception as e:
+        logger.warning(f"yfinance period change error for {ticker_sym} ({period}): {e}")
+        return 0.0
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -489,6 +550,21 @@ async def candles(
     else:
         data = await asyncio.to_thread(yf_get_candles, token, interval, days)
         return {"candles": data, "source": "yfinance"}
+
+
+@router.get("/change")
+async def period_change(
+    exchange: str = Query("NSE"),
+    token: str = Query("11630"),
+    period: str = Query("1D"),
+):
+    """Return % price change for a given period (1D/5D/1M/6M/YTD).
+    
+    For Shoonya live mode, still uses yfinance for historical comparison.
+    The period label maps to a meaningful start date for accurate comparison.
+    """
+    pct = await asyncio.to_thread(calculate_period_change, token, period)
+    return {"change": pct, "period": period, "token": token}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
