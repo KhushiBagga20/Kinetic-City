@@ -3,8 +3,13 @@ Harvest Room — Freeform investment simulator.
 POST /api/harvest-debrief
 """
 import os
+import sys
 from fastapi import APIRouter
 from models.schemas import HarvestDebriefRequest, HarvestDebriefResponse
+
+# Add parent directory to path so we can import lib
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.groq_pool import generate, is_configured
 
 router = APIRouter()
 
@@ -20,14 +25,10 @@ CRITICAL: Never say "you made a mistake." Never shame the user's choices. Frame 
 async def harvest_debrief(req: HarvestDebriefRequest):
     """Generate KINU's insights for a Harvest Room simulation."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return HarvestDebriefResponse(
                 insights=_fallback_insights(req)
             )
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         user_message = f"""The user completed a Harvest Room simulation.
 
@@ -48,16 +49,14 @@ YOUR TASK: Provide three messages:
 Separate messages with |||
 Max 60 words per message. Warm, specific, no jargon."""
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=KINU_SYSTEM,
-        )
-        response = model.generate_content(
+        text = generate(
             user_message,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=300),
+            area="harvest",
+            system_instruction=KINU_SYSTEM,
+            max_output_tokens=300,
         )
 
-        return HarvestDebriefResponse(insights=response.text.strip())
+        return HarvestDebriefResponse(insights=text)
 
     except Exception as e:
         print(f"Harvest debrief error: {e}")

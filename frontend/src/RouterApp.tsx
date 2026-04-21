@@ -27,27 +27,34 @@ function DashboardRoute() {
   const { section, moduleId } = useParams()
   const navigate = useNavigate()
   const fearType = useAppStore(s => s.fearType)
-  const dashboardSection = useAppStore(s => s.dashboardSection)
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
   const activeModuleId = useAppStore(s => s.activeModuleId)
   const setActiveModuleId = useAppStore(s => s.setActiveModuleId)
 
-  // Sync URL to Store (one-way only: URL → Store)
-  // The "Store → URL" direction was removed — it created an infinite loop:
-  // navigate() → URL change → useEffect re-fires → setDashboardSection → re-render → repeat.
-  // Components that want to navigate call navigate() directly (which they already do).
+  const isAuthLoading = useAppStore(s => s.isAuthLoading)
+
+  // Sync URL → Store on every URL change. Always call setDashboardSection so
+  // we never get stuck with a stale Zustand value vs the URL param.
   useEffect(() => {
     if (moduleId) {
-      if (dashboardSection !== 'module-reader') setDashboardSection('module-reader')
+      setDashboardSection('module-reader')
       if (activeModuleId !== moduleId) setActiveModuleId(moduleId)
     } else if (section) {
-      if (section !== dashboardSection) setDashboardSection(section)
+      setDashboardSection(section)
       if (activeModuleId !== null) setActiveModuleId(null)
     } else {
       navigate('/dashboard/home', { replace: true })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, moduleId])
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#00161b]">
+        <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#00f2fe] animate-spin" />
+      </div>
+    )
+  }
 
   if (!fearType) return <Navigate to="/start" replace />
   return <PersonalizedDashboard />

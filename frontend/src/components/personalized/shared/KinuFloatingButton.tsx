@@ -272,6 +272,14 @@ export default function KinuFloatingButton() {
                         Going to {msg.navAction.label}
                       </motion.div>
                     )}
+                    {msg.appAction && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
+                        className="mt-1.5 ml-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-sans"
+                        style={{ background: 'rgba(55,138,221,0.08)', color: '#378ADD', border: '1px solid rgba(55,138,221,0.2)' }}>
+                        <span>⚡</span>
+                        {msg.appAction.label}
+                      </motion.div>
+                    )}
                   </div>
                 </motion.div>
               ))}

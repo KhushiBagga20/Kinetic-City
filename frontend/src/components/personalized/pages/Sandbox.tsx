@@ -92,6 +92,10 @@ function SandboxInner() {
   const [wasBelowBudget, setWasBelowBudget] = useState(false)
   const [aiNewsLoading, setAiNewsLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ref that always holds the latest currentMonth — lets tickMonth read it
+  // without being recreated on every tick (avoids timer double-fires at 2x/5x)
+  const currentMonthRef = useRef(currentMonth)
+  currentMonthRef.current = currentMonth
 
   // Debrief state
   const [debriefStep, setDebriefStep] = useState(0) // 0=context, 1=instinct, 2=advice
@@ -177,53 +181,58 @@ function SandboxInner() {
   }
 
   const tickMonth = useCallback(() => {
-    setCurrentMonth(prev => {
-      const next = prev + 1
-      if (next >= 12) {
+    // Read from ref — always the latest value without stale closure
+    const next = currentMonthRef.current + 1
+
+    if (next >= 12) {
+      setCurrentMonth(12)
+      setIsPlaying(false)
+      setTimeout(() => setPhase('debrief'), 800)
+      return
+    }
+
+    // Check for whispers (asset drops >5%)
+    const whispers = getWhispers(selectedFY, next)
+    if (whispers.length > 0) {
+      setActiveWhispers(whispers)
+      setTimeout(() => setActiveWhispers([]), 4000)
+    }
+
+    // Check for crash history integration
+    const crashStart = getCrashForFYMonth(selectedFY, next)
+    if (crashStart && !pulledOut) {
+      setActiveCrashInfo({ crash: crashStart, monthsIn: 1 })
+    }
+
+    // Update active crash state (persistent banner)
+    const activeInfo = getActiveCrash(selectedFY, next)
+    if (activeInfo) {
+      setActiveCrashInfo(activeInfo)
+    } else {
+      setActiveCrashInfo(null)
+    }
+
+    // Check for special events — set flashEvent BEFORE phase change so
+    // AnimatePresence never sees crash-decision without a flashEvent
+    const event = getFYEvent(selectedFY, next)
+    if (event) {
+      const eventObj = { headline: event.headline, description: event.description, severity: event.severity }
+      if (event.severity === 'danger' && !pulledOut) {
+        setFlashEvent(eventObj)
         setIsPlaying(false)
-        setTimeout(() => setPhase('debrief'), 800)
-        return 12
-      }
-
-      // Check for whispers (asset drops > 5%)
-      const whispers = getWhispers(selectedFY, next)
-      if (whispers.length > 0) {
-        setActiveWhispers(whispers)
-        setTimeout(() => setActiveWhispers([]), 4000)
-      }
-
-      // Check for crash history integration
-      const crashStart = getCrashForFYMonth(selectedFY, next)
-      if (crashStart && !pulledOut) {
-        // A new crash has started — update the active crash info
-        setActiveCrashInfo({ crash: crashStart, monthsIn: 1 })
-      }
-
-      // Update active crash state (persistent banner)
-      const activeInfo = getActiveCrash(selectedFY, next)
-      if (activeInfo) {
-        setActiveCrashInfo(activeInfo)
+        setPhase('crash-decision')
+        setCrashDecisionMade(false)
+        setShowRecoveryPanel(false)
       } else {
-        setActiveCrashInfo(null)
+        setFlashEvent(eventObj)
+        setTimeout(() => setFlashEvent(null), 3000)
       }
+    }
 
-      // Check for special events
-      const event = getFYEvent(selectedFY, next)
-      if (event) {
-        setFlashEvent({ headline: event.headline, description: event.description, severity: event.severity })
-
-        if (event.severity === 'danger' && !pulledOut) {
-          setIsPlaying(false)
-          setPhase('crash-decision')
-          setCrashDecisionMade(false)
-          setShowRecoveryPanel(false)
-        } else {
-          setTimeout(() => setFlashEvent(null), 3000)
-        }
-      }
-
-      return next
-    })
+    // Advance month last
+    setCurrentMonth(next)
+  // currentMonth intentionally excluded — read via ref to keep callback stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFY, pulledOut])
 
   useEffect(() => {
@@ -422,7 +431,7 @@ function SandboxInner() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
 
         {/* ═══ PHASE 1: SETUP ═══════════════════════════════════════════ */}
         {phase === 'setup' && (

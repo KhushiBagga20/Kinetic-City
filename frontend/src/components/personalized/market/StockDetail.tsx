@@ -38,6 +38,7 @@ export default function StockDetail({ symbol, token, exchange, quote, fetchCandl
   const [kinuLoading, setKinuLoading] = useState(false)
   const [flash, setFlash] = useState<'up' | 'down' | null>(null)
   const prevLp = useRef(quote?.lp)
+  const hasFetchedKinu = useRef<string>('') // tracks which symbol we've already fetched
 
   const lp = quote?.lp
   const pc = quote?.pc
@@ -74,9 +75,14 @@ export default function StockDetail({ symbol, token, exchange, quote, fetchCandl
     setKinuLoading(false)
   }, [symbol, lp, pc, fearType])
 
+  // Trigger fetch when symbol changes OR when lp first becomes available for current symbol
   useEffect(() => {
-    if (lp) fetchKinu()
-  }, [symbol]) // Only on token change, not every tick
+    if (!lp) return
+    if (hasFetchedKinu.current === symbol) return // already fetched for this symbol
+    hasFetchedKinu.current = symbol
+    setKinuText('') // clear stale text from previous stock
+    fetchKinu()
+  }, [symbol, lp]) // lp needed so we wait for WebSocket data to arrive
 
   const ohlcItems = [
     { label: 'Open', value: formatPrice(quote?.o) },

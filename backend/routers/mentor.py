@@ -1,10 +1,15 @@
 """
-KINU AI Mentor — Gemini-powered financial intelligence router.
+KINU AI Mentor — Azure OpenAI (GPT-4o) powered financial intelligence router.
 POST /api/mentor
 """
 import os
+import sys
 from fastapi import APIRouter
 from models.schemas import MentorRequest, MentorResponse
+
+# Add parent directory to path so we can import lib
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.groq_pool import get_chat_model, generate, is_configured
 
 router = APIRouter()
 
@@ -36,23 +41,19 @@ FEAR_CONTEXT = {
 async def mentor_chat(req: MentorRequest):
     """Handle a chat message to KINU, the AI financial intelligence."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return MentorResponse(
-                reply="I'm not fully connected yet — the GEMINI_API_KEY hasn't been set in the backend .env file. "
+                reply="I'm not fully connected yet — the AZURE_OPENAI_API_KEY hasn't been set in the backend .env file. "
                       "Once it's configured, I'll be able to have a real conversation with you. "
                       "In the meantime, check out the Learn section for answers to common questions."
             )
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         fear_context = FEAR_CONTEXT.get(req.fear_type, "")
         metaphor_note = f"The user prefers a '{req.metaphor_style}' communication style." if req.metaphor_style != "generic" else ""
 
         full_system = f"{SYSTEM_PROMPT}\n\n{fear_context}\n{metaphor_note}"
 
-        # Build conversation history for Gemini
+        # Build conversation history
         history = []
         for msg in req.conversation_history[:-1]:  # exclude the latest user message
             history.append({
@@ -60,12 +61,11 @@ async def mentor_chat(req: MentorRequest):
                 "parts": [msg.content],
             })
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+        chat = get_chat_model(
+            area="mentor",
             system_instruction=full_system,
+            history=history,
         )
-
-        chat = model.start_chat(history=history)
 
         # Prepend app context if provided
         full_message = f"[User app context: {req.app_context}]\n{req.message}" if req.app_context else req.message
@@ -77,7 +77,7 @@ async def mentor_chat(req: MentorRequest):
         print(f"Mentor API error: {e}")
         return MentorResponse(
             reply="I'm having a bit of trouble right now. Please try again in a moment. "
-                  "If this keeps happening, check if the GEMINI_API_KEY in the backend .env file is valid."
+                  "If this keeps happening, check if the AZURE_OPENAI_API_KEY in the backend .env file is valid."
         )
 
 
@@ -101,19 +101,16 @@ async def explain_term(req: dict):
         return _term_cache[cache_key]
 
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return {
                 "term": term,
-                "plain": "KINU is not connected yet. Set GEMINI_API_KEY in backend .env.",
+                "plain": "KINU is not connected yet. Set AZURE_OPENAI_API_KEY in backend .env.",
                 "analogy": "",
                 "whyItMatters": "",
                 "fromKINU": True,
             }
 
-        import google.generativeai as genai
         import json as json_lib
-        genai.configure(api_key=api_key)
 
         prompt = f"""Explain the financial term "{term}" for a young Indian investor.
 Return ONLY a JSON object with these exact keys:
@@ -122,9 +119,7 @@ Return ONLY a JSON object with these exact keys:
 - whyItMatters: one sentence on why this matters for their investing, max 25 words
 No preamble. No markdown. Just the JSON object."""
 
-        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
-        response = model.generate_content(prompt)
-        text = response.text.strip()
+        text = generate(prompt, area="term")
 
         # Strip markdown code fences if present
         if text.startswith("```"):

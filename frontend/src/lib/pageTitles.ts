@@ -19,6 +19,7 @@ const SECTION_TITLES: Record<string, string> = {
   profile:       'Profile',
   'module-reader':'Learning',
   roadmap:       'Roadmap',
+  'her-journey': 'Her Journey',
 }
 
 /** Set the browser tab title for a given dashboard section. */

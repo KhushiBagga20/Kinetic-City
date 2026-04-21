@@ -83,10 +83,15 @@ def _fetch_market_data() -> dict:
             else:
                 price_str = f"{close:,.0f}"
 
+            import math
+            change_val = float(round(change_pct, 1))
+            if math.isnan(change_val):
+                change_val = 0.0
+
             results.append({
                 "label": label,
                 "price": price_str,
-                "change": round(change_pct, 1),
+                "change": change_val,
                 "direction": "up" if change_pct >= 0 else "down",
                 "inverse": label in INVERSE_SENTIMENT,
             })
@@ -98,16 +103,13 @@ def _fetch_market_data() -> dict:
 
 
 @router.get("/latest")
-async def get_latest_market_data():
+def get_latest_market_data():
     """Return latest market data with 5-minute cache."""
-    import asyncio
-
     now = time.time()
     if _cache["data"] and (now - _cache["ts"]) < CACHE_TTL:
         return _cache["data"]
 
-    loop = asyncio.get_event_loop()
-    data = await loop.run_in_executor(None, _fetch_market_data)
+    data = _fetch_market_data()
     _cache["data"] = data
     _cache["ts"] = time.time()
     return data

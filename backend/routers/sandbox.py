@@ -1,15 +1,20 @@
 """
-Sandbox FY Time Machine — Gemini-powered debrief endpoints.
+Sandbox FY Time Machine — Azure OpenAI (GPT-4o) powered debrief endpoints.
 POST /api/sandbox-debrief
 POST /api/instinct-debrief
 """
 import os
+import sys
 from fastapi import APIRouter
 from models.schemas import (
     SandboxDebriefRequest, SandboxDebriefResponse,
     InstinctDebriefRequest, InstinctDebriefResponse,
     SandboxAdviceRequest, SandboxAdviceResponse,
 )
+
+# Add parent directory to path so we can import lib
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.groq_pool import generate, is_configured
 
 router = APIRouter()
 
@@ -65,15 +70,11 @@ FY_CONTEXT = {
 async def sandbox_debrief(req: SandboxDebriefRequest):
     """Message 2: Where the user's instincts were right."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return SandboxDebriefResponse(
                 debrief=f"Your allocation for {req.year} showed thought. "
                         f"Diversification across asset classes is always the smartest baseline."
             )
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         fear_ctx = FEAR_CONTEXT.get(req.fear_type, "")
         fy_ctx = FY_CONTEXT.get(req.year, f"Financial year {req.year}.")
@@ -111,16 +112,14 @@ Max 80 words. Warm, specific."""
 
         system = f"{KINU_SYSTEM}\n\n{fear_ctx}"
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=system,
-        )
-        response = model.generate_content(
+        text = generate(
             user_message,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=150),
+            area="sandbox",
+            system_instruction=system,
+            max_output_tokens=150,
         )
 
-        return SandboxDebriefResponse(debrief=response.text.strip())
+        return SandboxDebriefResponse(debrief=text)
 
     except Exception as e:
         print(f"Sandbox debrief error: {e}")
@@ -134,16 +133,12 @@ Max 80 words. Warm, specific."""
 async def sandbox_advice(req: SandboxAdviceRequest):
     """Message 3: What to do differently next time."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return SandboxAdviceResponse(
                 advice=f"For {req.year}, the optimal allocation leaned heavily into "
                        f"{'debt' if req.optimal_allocation.get('debt', 0) > 50 else 'equity'}. "
                        f"The key principle: diversify always, adjust with conviction."
             )
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         fear_ctx = FEAR_CONTEXT.get(req.fear_type, "")
         fy_ctx = FY_CONTEXT.get(req.year, f"Financial year {req.year}.")
@@ -177,16 +172,14 @@ Frame everything as learning, not failure.
 One principle per response.
 {fear_ctx}"""
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=system,
-        )
-        response = model.generate_content(
+        text = generate(
             user_message,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=150),
+            area="sandbox",
+            system_instruction=system,
+            max_output_tokens=150,
         )
 
-        return SandboxAdviceResponse(advice=response.text.strip())
+        return SandboxAdviceResponse(advice=text)
 
     except Exception as e:
         print(f"Sandbox advice error: {e}")
@@ -201,16 +194,12 @@ One principle per response.
 async def instinct_debrief(req: InstinctDebriefRequest):
     """KINU analyses the user's Time Machine instinct — did they stay or pull out."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             return InstinctDebriefResponse(
                 debrief="Your instinct in that moment was real. "
                         "Whether you stayed or pulled out, you now have data "
                         "to make a better decision next time."
             )
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         fear_ctx = FEAR_CONTEXT.get(req.fear_type, "")
 
@@ -237,16 +226,14 @@ Max 80 words. Be specific. Be warm. Be honest."""
 
         system = f"{KINU_SYSTEM}\n\n{fear_ctx}"
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=system,
-        )
-        response = model.generate_content(
+        text = generate(
             user_message,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=200),
+            area="sandbox",
+            system_instruction=system,
+            max_output_tokens=200,
         )
 
-        return InstinctDebriefResponse(debrief=response.text.strip())
+        return InstinctDebriefResponse(debrief=text)
 
     except Exception as e:
         print(f"Instinct debrief error: {e}")
@@ -255,4 +242,3 @@ Max 80 words. Be specific. Be warm. Be honest."""
                     "History shows that staying invested through crashes has always recovered. "
                     "Now you know what your gut does under pressure."
         )
-

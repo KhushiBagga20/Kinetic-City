@@ -8,6 +8,7 @@ import MarketPulseBoard from './MarketPulseBoard'
 import SeasonalPatterns from './SeasonalPatterns'
 import GoalsSection from './goals/GoalsSection'
 import FearQuote from './shared/FearQuote'
+import KinuInsight from './shared/KinuInsight'
 import MarketNewsFeed from '../news/MarketNewsFeed'
 import NewsTickerBar from '../news/NewsTickerBar'
 import { Zap, ChevronDown, Search, FlaskConical, ArrowUpRight, Sprout, LineChart, Clock, BookOpen, TrendingUp, ArrowRight } from 'lucide-react'
@@ -244,6 +245,16 @@ export default function DashboardHome() {
           <ArrowRight className="w-5 h-5 shrink-0 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style={{ color: 'var(--accent)' }} />
         </div>
       </motion.div>
+
+      {/* KINU Dashboard Insight */}
+      <div className="mb-6">
+        <KinuInsight
+          page="home"
+          extraContext={`User is looking at their dashboard overview. Their next recommended step is: ${step.headline}.`}
+          ctaSection={step.route}
+          ctaLabel={step.headline}
+        />
+      </div>
 
       {/* ── Quick Actions 3-column grid ───────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 mb-6">

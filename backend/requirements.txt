@@ -3,7 +3,6 @@ uvicorn
 httpx
 python-dotenv
 pydantic
-google-generativeai
 yfinance
 requests
 websocket-client

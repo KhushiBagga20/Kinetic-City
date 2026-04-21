@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAppStore } from '../../../store/useAppStore'
 import { formatINR } from '../../../lib/formatINR'
 import { generateHarvestDebrief } from '../../../lib/simulateAI'
+import KinuInsight from '../shared/KinuInsight'
 import {
   simulateFY,
 } from '../../../lib/sandboxData'
@@ -237,6 +238,14 @@ export default function HarvestRoom() {
               <h1 className="font-display font-semibold text-3xl md:text-5xl text-white mb-3 tracking-tight">The Harvest Room</h1>
               <p className="font-sans text-base text-white/40 max-w-lg mx-auto">Pick an era. Plant your money. See what history grew.</p>
             </div>
+
+            {/* KINU insight */}
+            <KinuInsight
+              page="harvest"
+              extraContext={`User is about to simulate the ${selectedEra.label} era with ₹${budget.toLocaleString('en-IN')} budget using ${style} style.`}
+              ctaSection="time-machine"
+              ctaLabel="Survive a crash first"
+            />
 
             {/* Era Selection */}
             <div>

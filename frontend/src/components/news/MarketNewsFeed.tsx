@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { fetchMarketNews, getFearFraming, type NewsItem } from '../../lib/newsAPI'
@@ -83,13 +83,17 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
 
   const ft = fearType || useAppStore.getState().fearType || 'loss'
 
-  // AI frame cache — lazy, generated on hover, never on mount
+  // AI frame cache — lazy, generated on hover with debounce, never on mount
   const [aiFrames, setAiFrames] = useState<Map<string, string>>(new Map())
   const [loadingFrames, setLoadingFrames] = useState<Set<string>>(new Set())
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const aiCallInFlight = useRef(false)  // only 1 AI call at a time from this component
 
   async function generateFrame(item: NewsItem) {
     const key = item.id || item.title
-    if (aiFrames.has(key) || loadingFrames.has(key)) return
+    // Skip if already cached, loading, or another call is in flight
+    if (aiFrames.has(key) || loadingFrames.has(key) || aiCallInFlight.current) return
+    aiCallInFlight.current = true
     setLoadingFrames(prev => new Set([...prev, key]))
     try {
       const data = await generateKinuChat({
@@ -103,7 +107,20 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
       setAiFrames(prev => new Map([...prev, [key, item.impact || '']]))
     } finally {
       setLoadingFrames(prev => { const s = new Set(prev); s.delete(key); return s })
+      aiCallInFlight.current = false
     }
+  }
+
+  function handleMouseEnter(i: number, item: NewsItem) {
+    setHoveredIdx(i)
+    // Debounce: only fire AI call if user hovers for 400ms
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => generateFrame(item), 400)
+  }
+
+  function handleMouseLeave() {
+    setHoveredIdx(null)
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
   }
 
   const doFetch = useCallback(async () => {
@@ -263,8 +280,8 @@ export default function MarketNewsFeed({ maxItems = 5, compact: _compact = false
                     borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
                     background: isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
                   }}
-                  onMouseEnter={() => { setHoveredIdx(i); generateFrame(item) }}
-                  onMouseLeave={() => setHoveredIdx(null)}
+                  onMouseEnter={() => handleMouseEnter(i, item)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   {/* Row 1: dot + title + time */}
                   <div className="flex items-start gap-3">

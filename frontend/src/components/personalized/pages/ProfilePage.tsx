@@ -32,7 +32,7 @@ const FEAR_STRENGTH: Record<FearType, string[]> = {
 }
 
 /* ── Toggle switch ──────────────────────────────────────────────────────── */
-function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       onClick={() => onChange(!on)}

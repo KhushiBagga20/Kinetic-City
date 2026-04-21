@@ -1,15 +1,20 @@
 """
-Fear Quote Generator — Gemini-powered personalised fear-type quotes.
+Fear Quote Generator — Azure OpenAI (GPT-4o) powered personalised fear-type quotes.
 POST /api/fear-quote
 """
 import os
+import sys
 import random
 from fastapi import APIRouter
 from models.schemas import FearQuoteRequest, FearQuoteResponse
 
+# Add parent directory to path so we can import lib
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.groq_pool import generate, is_configured
+
 router = APIRouter()
 
-# ── Fallback quotes (used when Gemini is unavailable) ────────────────────────
+# ── Fallback quotes (used when Azure OpenAI is unavailable) ────────────────
 
 FALLBACK_QUOTES: dict[str, list[str]] = {
     "loss": [
@@ -56,12 +61,8 @@ CONTEXT_PROMPTS = {
 async def generate_fear_quote(req: FearQuoteRequest):
     """Generate a personalised one-liner based on fear type + context."""
     try:
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        if not api_key:
+        if not is_configured():
             raise ValueError("No API key")
-
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
 
         name_part = f"The user's name is {req.user_name}." if req.user_name else ""
         context_hint = CONTEXT_PROMPTS.get(req.context, "for a general screen")
@@ -85,9 +86,8 @@ Rules:
 
 Return ONLY the quote, nothing else."""
 
-        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
-        response = model.generate_content(prompt)
-        quote = response.text.strip().strip('"').strip("'").strip('"').strip('"')
+        text = generate(prompt, area="quotes")
+        quote = text.strip().strip('"').strip("'").strip('\u201c').strip('\u201d')
 
         # Sanity check
         if len(quote) > 200 or len(quote) < 10:

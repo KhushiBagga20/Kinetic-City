@@ -1,25 +1,4 @@
-import { getVertexClient } from './firebase';
-
-async function callGemini(prompt: string, systemInstruction: string): Promise<string> {
-  const ai = await getVertexClient();
-  if (!ai) throw new Error("Firebase AI is not configured.");
-
-  const { getGenerativeModel } = await import('firebase/ai');
-  const model = getGenerativeModel(ai, { 
-    model: "gemini-2.5-flash",
-    systemInstruction: {
-      role: "system",
-      parts: [{ text: systemInstruction }]
-    }
-  });
-
-  const response = await model.generateContent(prompt);
-  const text = response.response.text();
-  
-  if (!text) throw new Error("Empty response from AI");
-  
-  return text.replace(/^"|"$|`/g, '').trim();
-}
+import { callGroq } from './groqPool';
 
 const SYSTEM_INSTRUCTION_OBJECTIVE = "You are an objective, sophisticated financial simulation analyzer. Analyze the inputs from the user's simulation and provide a sharp, data-driven debrief (1-2 paragraphs max). Do not use markdown headers or emojis. Keep it direct and strictly focused on what the mathematical numbers dictate relative to the user's fear profile.";
 
@@ -41,7 +20,7 @@ export async function generateSandboxDebrief(data: {
       
       Generate a sharp debrief explaining the consequences of their action relative to what historically happened in ${data.year}.
     `;
-    const debrief = await callGemini(prompt, SYSTEM_INSTRUCTION_OBJECTIVE);
+    const debrief = await callGroq(prompt, SYSTEM_INSTRUCTION_OBJECTIVE, 'simulation');
     return { debrief };
   } catch {
     return { debrief: data.did_pull_out 
@@ -68,7 +47,7 @@ export async function generateSandboxAdvice(data: {
       Did they panic sell? ${data.did_pull_out}.
       Provide a comparative piece of advice.
     `;
-    const advice = await callGemini(prompt, "You are a quantitative portfolio strategist. Keep responses to exactly two crisp sentences.");
+    const advice = await callGroq(prompt, "You are a quantitative portfolio strategist. Keep responses to exactly two crisp sentences.", 'simulation');
     return { advice };
   } catch {
     return { advice: "Compare your result to the optimal portfolio to understand the exact cost of your decision." };
@@ -92,7 +71,7 @@ export async function generateInstinctDebrief(data: {
       Did they halt their SIP out of panic? ${data.did_withdraw ? 'Yes, at month ' + data.withdraw_month : 'No, they stayed committed.'}
       Write a sharp debrief on how their psychology impacted their final mathematical returns.
     `;
-    const debrief = await callGemini(prompt, SYSTEM_INSTRUCTION_OBJECTIVE);
+    const debrief = await callGroq(prompt, SYSTEM_INSTRUCTION_OBJECTIVE, 'simulation');
     return { debrief };
   } catch {
     return { debrief: data.did_withdraw ? "Stopping a SIP during a crash guarantees you buy less when things are on sale." : "Consistency beat volatility. You accumulated cheaper units during the downturns." };
@@ -117,7 +96,7 @@ export async function generateHarvestDebrief(data: {
       Total Invested: ${data.total_invested}. Final Value Projected: ${data.final_value}.
       Provide a highly encouraging but realistic debrief showing how time and compounding are the antidote to their specific fear.
     `;
-    const insights = await callGemini(prompt, SYSTEM_INSTRUCTION_OBJECTIVE);
+    const insights = await callGroq(prompt, SYSTEM_INSTRUCTION_OBJECTIVE, 'simulation');
     return { insights };
   } catch {
     return { insights: "Time in the market significantly outperformed trying to time the market. Your compounding curve speaks for itself." };
@@ -138,7 +117,7 @@ export async function generateHistoricalNews(data: {
       HEADLINE: [Your Headline]
       SNIPPET: [Your Snippet]
     `;
-    const response = await callGemini(prompt, "You are a historical financial news generator. Output strictly in the requested format.");
+    const response = await callGroq(prompt, "You are a historical financial news generator. Output strictly in the requested format.", 'news');
     
     const headlineMatch = response.match(/HEADLINE:\s*(.*)/i);
     const snippetMatch = response.match(/SNIPPET:\s*(.*)/i);
@@ -167,7 +146,7 @@ export async function askKinuCurriculum(query: string, fearType: string, curricu
       Answer the user's question accurately using only the principles of long-term investing, compounding, and index funds. Tailor the tone to reassure someone with a "${fearType}" fear profile. Keep the answer concise (2-3 sentences max).
     `;
     
-    const answer = await callGemini(prompt, "You are Kinu, a supportive and highly intelligent financial AI mentor for the Kinetic City platform.");
+    const answer = await callGroq(prompt, "You are Kinu, a supportive and highly intelligent financial AI mentor for the Kinetic City platform.", 'curriculum');
     return answer;
   } catch {
     return "I'm having trouble retrieving that information right now, but remember: long-term consistency is your best defense against market noise.";

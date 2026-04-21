@@ -41,6 +41,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         userId: user.uid,
         userEmail: user.email || '',
         userName: displayName,
+        isNewUser: false,  // returning user — skip onboarding
       })
       updateStreak()
       setGoogleLoading(false)
@@ -98,6 +99,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     if (hasPreviousSession) {
       useAppStore.setState({
         isAuthenticated: true,
+        isNewUser: false,   // returning user
         userId: useAppStore.getState().userId || 'local_' + Math.random().toString(36).substring(2, 10),
         userEmail: email.trim() || useAppStore.getState().userEmail,
       })

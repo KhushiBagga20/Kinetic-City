@@ -20,17 +20,21 @@ export const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const auth = isFirebaseConfigured ? getAuth(app!) : null;
 export const db = isFirebaseConfigured ? getFirestore(app!) : null;
 
-// Initialize Vertex AI dynamically to avoid Vite SSR/build issues if module is absent
+// Initialize Firebase AI client using VertexAIBackend
+// This routes to the paid-tier Vertex AI endpoint (aiplatform.googleapis.com)
+// which utilizes your Google Cloud billing account.
 export const getVertexClient = async () => {
   if (!isFirebaseConfigured || !app) return null;
   try {
-    const { getAI, GoogleAIBackend } = await import('firebase/ai');
-    return getAI(app, { backend: new GoogleAIBackend() });
+    const { getAI, VertexAIBackend } = await import('firebase/ai');
+    return getAI(app, { backend: new VertexAIBackend() });
   } catch (err) {
-    console.warn("AI module not found or failed to initialize:", err);
+    console.warn("Firebase Vertex AI module not found:", err);
     return null;
   }
 };
+
+
 
 // Google Sign-In helper
 // NOTE: Add localhost to Firebase Console authorized domains:

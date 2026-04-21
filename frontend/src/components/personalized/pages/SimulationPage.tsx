@@ -1,4 +1,4 @@
-import { motion, useMotionValue, animate } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Chart, registerables } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
@@ -7,7 +7,9 @@ import { formatINR } from '../../../lib/formatINR'
 import RiskHorizon from '../RiskHorizon'
 import CrashTimeline from '../CrashTimeline'
 import FearQuote from '../shared/FearQuote'
+import KinuInsight from '../shared/KinuInsight'
 import NewsImpactCard from '../../news/NewsImpactCard'
+import { kinuRegistry } from '../../../lib/kinuActionRegistry'
 
 Chart.register(...registerables)
 
@@ -168,6 +170,18 @@ export default function SimulationPage() {
     return () => { workerRef.current?.terminate(); chartInstance.current?.destroy() }
   }, [])
 
+  // Register KINU actions so the floating chat button can trigger them
+  useEffect(() => {
+    kinuRegistry.register('start_simulation', runSimulation)
+    kinuRegistry.register('scroll_to_chart', () => {
+      document.getElementById('monte-carlo-chart')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => {
+      kinuRegistry.unregister('start_simulation')
+      kinuRegistry.unregister('scroll_to_chart')
+    }
+  }, [runSimulation])
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
       {/* News Context */}
@@ -291,6 +305,14 @@ export default function SimulationPage() {
 
             {/* AI personalised quote */}
             <FearQuote context="simulation" variant="card" />
+
+            {/* KINU contextual insight */}
+            <KinuInsight
+              page="simulation"
+              extraContext={hasRun && result ? `Simulation ran: ₹${monthly}/month for ${years} years. Median outcome ₹${result.finalP50.toLocaleString('en-IN')}, invested ₹${result.totalInvested.toLocaleString('en-IN')}` : `About to run a SIP simulation: ₹${monthly}/month for ${years} years`}
+              ctaSection="time-machine"
+              ctaLabel="Test a real crash"
+            />
           </motion.div>
         </div>
 

@@ -52,30 +52,8 @@ const FEAR_CARDS = [
   },
 ]
 
-// ── HOW IT WORKS steps data ──────────────────────────────────────────────────
-
-const STEPS = [
-  {
-    n: '01', title: 'Take the Vibe Check',
-    sub: '5 questions. No jargon. Just your honest reactions.',
-    visual: <QuizMockup />,
-  },
-  {
-    n: '02', title: 'Get your Fear Profile',
-    sub: 'We tell you exactly what\'s holding you back — and why it makes complete sense.',
-    visual: <FearRevealMockup />,
-  },
-  {
-    n: '03', title: 'Your dashboard. Built for you.',
-    sub: 'Every module, every lesson, every simulation is tailored to your fear type.',
-    visual: <DashboardMockup />,
-  },
-  {
-    n: '04', title: 'Simulate. Learn. Overcome.',
-    sub: 'Run your ₹100 through a real market crash. Watch it survive. Then you\'ll know.',
-    visual: <FanChartMockup />,
-  },
-]
+// ── HOW IT WORKS steps data — defined AFTER visual components below ──────────
+// (see STEPS constant near line 178)
 
 
 
@@ -175,6 +153,33 @@ function FanChartMockup() {
     </div>
   )
 }
+
+
+// ── HOW IT WORKS steps data ──────────────────────────────────────────────────
+// Defined here (after component definitions) so JSX refs are in scope
+
+const STEPS = [
+  {
+    n: '01', title: 'Take the Vibe Check',
+    sub: '5 questions. No jargon. Just your honest reactions.',
+    visual: <QuizMockup />,
+  },
+  {
+    n: '02', title: 'Get your Fear Profile',
+    sub: "We tell you exactly what's holding you back — and why it makes complete sense.",
+    visual: <FearRevealMockup />,
+  },
+  {
+    n: '03', title: 'Your dashboard. Built for you.',
+    sub: 'Every module, every lesson, every simulation is tailored to your fear type.',
+    visual: <DashboardMockup />,
+  },
+  {
+    n: '04', title: 'Simulate. Learn. Overcome.',
+    sub: "Run your ₹100 through a real market crash. Watch it survive. Then you'll know.",
+    visual: <FanChartMockup />,
+  },
+]
 
 // ── SECTION WRAPPERS ─────────────────────────────────────────────────────────
 

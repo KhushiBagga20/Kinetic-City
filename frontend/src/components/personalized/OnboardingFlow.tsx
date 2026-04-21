@@ -42,7 +42,7 @@ const KINU_FALLBACKS: Record<FearType, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function OnboardingFlow() {
+export default function OnboardingFlow({ onDone }: { onDone?: () => void }) {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const setOnboardingComplete = useAppStore(s => s.setOnboardingComplete)
 
@@ -50,6 +50,11 @@ export default function OnboardingFlow() {
 
   const color = FEAR_COLORS[fearType]
   const name = FEAR_NAMES[fearType]
+
+  const dismiss = () => {
+    setOnboardingComplete()
+    onDone?.()
+  }
 
   // ── Step content ────────────────────────────────────────────────────────────
 
@@ -199,7 +204,7 @@ export default function OnboardingFlow() {
 
             {/* CTA */}
             <button
-              onClick={() => setOnboardingComplete()}
+              onClick={() => dismiss()}
               className="mt-8 bg-[#c0f18e] text-[#0a1a00] font-bold px-8 py-3.5 rounded-full transition-transform duration-150 active:scale-[0.97] hover:brightness-110"
             >
               Let's go →
@@ -222,7 +227,7 @@ export default function OnboardingFlow() {
     >
       {/* Skip button */}
       <button
-        onClick={() => setOnboardingComplete()}
+        onClick={() => dismiss()}
         className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors duration-150"
       >
         <X className="w-5 h-5" />

@@ -19,11 +19,12 @@ import HistoricalSimulators from './pages/HistoricalSimulators'
 import ComparePage from './pages/ComparePage'
 import CalculatorsPage from './pages/CalculatorsPage'
 import ModuleJourney from './pages/ModuleJourney'
+import HerJourneyPage from './pages/HerJourneyPage'
 import { setPageTitle } from '../../lib/pageTitles'
 import { getTrackForFear } from '../../lib/curriculumData'
 import DotGrid from '../shared/DotGrid'
 import {
-  LineChart, Clock, ChevronDown, ChevronRight, X, User,
+  LineChart, ChevronDown, ChevronRight, X, User,
   LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check, Settings,
   Home, BookOpen, Zap
 } from 'lucide-react'
@@ -65,6 +66,7 @@ function getActiveTab(section: string): string | null {
   if (section === 'learn' || section === 'compare' || section === 'calculators') return 'learn'
   if (section === 'kinu') return 'kinu'
   if (section === 'portfolio') return 'portfolio'
+  if (section === 'her-journey') return 'her-journey'
   return null
 }
 
@@ -73,12 +75,24 @@ function getActiveTab(section: string): string | null {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 export default function PersonalizedDashboard() {
-  const isTouchDevice = useRef(typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches)
+
 
   const navigate = useNavigate()
   const dashboardSection = useAppStore(s => s.dashboardSection)
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
-  const hasCompletedOnboarding = useAppStore(s => s.hasCompletedOnboarding)
+  const userGender = useAppStore(s => s.userGender)
+  // Wait 800ms for Firebase to hydrate hasCompletedOnboarding from Firestore.
+  // For new users it stays false → show onboarding.
+  // For returning users onAuthStateChanged sets it true → skip onboarding.
+  // Once dismissed, setOnboardingComplete() keeps it true across all re-mounts.
+  const [onboardingVisible, setOnboardingVisible] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!useAppStore.getState().hasCompletedOnboarding) setOnboardingVisible(true)
+    }, 800)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const userName = useAppStore(s => s.userName) || ''
   const userEmail = useAppStore(s => s.userEmail) || ''
   const displayName = userName && userName !== 'Explorer' ? userName.split(' ')[0] : ''
@@ -143,6 +157,7 @@ export default function PersonalizedDashboard() {
       case 'profile':     return <ProfilePage key="profile" />
       case 'settings':    return <ProfilePage key="settings" />
       case 'module-reader': return <ModuleJourney key="module-reader" />
+      case 'her-journey': return <HerJourneyPage key="her-journey" />
       default:            return <DashboardHome key="home" />
     }
   }
@@ -153,7 +168,7 @@ export default function PersonalizedDashboard() {
 
   return (
     <div className="min-h-screen relative" style={{ background: 'var(--bg)' }}>
-      {!hasCompletedOnboarding && fearType && <OnboardingFlow />}
+      {onboardingVisible && fearType && <OnboardingFlow onDone={() => setOnboardingVisible(false)} />}
       <DotGrid />
 
       {/* ══════════════════════════════════════════════════════════════════
@@ -194,6 +209,27 @@ export default function PersonalizedDashboard() {
 
           {/* Portfolio */}
           <NavItem label="Portfolio" active={activeTab === 'portfolio'} onClick={() => nav('portfolio')} />
+
+          {/* Her Journey — only for female users */}
+          {userGender === 'female' && (
+            <button
+              onClick={() => nav('her-journey')}
+              className="relative flex items-center justify-center transition-[color] duration-150"
+              style={{
+                touchAction: 'manipulation',
+                padding: '0 20px',
+                height: 60,
+                color: activeTab === 'her-journey' ? 'var(--accent)' : 'rgba(255,255,255,0.45)',
+              }}
+              onMouseEnter={e => { if (activeTab !== 'her-journey') e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
+              onMouseLeave={e => { if (activeTab !== 'her-journey') e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+            >
+              <FireflyIcon className="w-[22px] h-[22px]" />
+              {activeTab === 'her-journey' && (
+                <span className="absolute bottom-0 left-[20px] right-[20px]" style={{ height: 3, background: 'var(--accent)' }} />
+              )}
+            </button>
+          )}
         </div>
 
         {/* ── Right: Profile avatar (desktop) + Hamburger (mobile) ────── */}
@@ -459,6 +495,25 @@ export default function PersonalizedDashboard() {
                     </div>
                   )
                 })}
+
+                {/* Her Journey — mobile drawer (only for female users) */}
+                {userGender === 'female' && (
+                  <button
+                    onClick={() => nav('her-journey')}
+                    className="w-full flex items-center gap-3 text-left transition-all duration-150"
+                    style={{
+                      minHeight: 48,
+                      padding: '0 16px',
+                      background: dashboardSection === 'her-journey' ? 'rgba(192,241,142,0.08)' : 'transparent',
+                      color: dashboardSection === 'her-journey' ? 'var(--accent)' : 'rgba(255,255,255,0.45)',
+                      borderLeft: dashboardSection === 'her-journey' ? '2px solid var(--accent)' : '2px solid transparent',
+                      touchAction: 'manipulation'
+                    }}
+                  >
+                    <FireflyIcon className="w-5 h-5" />
+                    <span className="font-sans text-[15px] font-medium">Her Journey</span>
+                  </button>
+                )}
                 
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 0 8px 0' }} />
                 
@@ -549,13 +604,22 @@ export default function PersonalizedDashboard() {
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[150] flex items-center justify-around"
         style={{ height: 64, background: 'rgba(0,22,27,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        {[
-          { id: 'home', label: 'Home', icon: Home },
-          { id: 'learn', label: 'Learn', icon: BookOpen },
-          { id: 'simulation', label: 'Simulate', icon: Zap },
-          { id: 'portfolio', label: 'Portfolio', icon: BarChart3 },
-          { id: 'kinu', label: 'KINU', icon: null },  // special: render 'K' in a circle
-        ].map(tab => {
+        {(userGender === 'female'
+          ? [
+              { id: 'home', label: 'Home', icon: Home },
+              { id: 'learn', label: 'Learn', icon: BookOpen },
+              { id: 'her-journey', label: 'Her Journey', icon: FireflyIcon },
+              { id: 'portfolio', label: 'Portfolio', icon: BarChart3 },
+              { id: 'kinu', label: 'KINU', icon: null },
+            ]
+          : [
+              { id: 'home', label: 'Home', icon: Home },
+              { id: 'learn', label: 'Learn', icon: BookOpen },
+              { id: 'simulation', label: 'Simulate', icon: Zap },
+              { id: 'portfolio', label: 'Portfolio', icon: BarChart3 },
+              { id: 'kinu', label: 'KINU', icon: null },
+            ]
+        ).map(tab => {
           const isActive = dashboardSection === tab.id || (tab.id === 'simulation' && SIMULATE_SECTIONS.includes(dashboardSection))
           return (
             <button key={tab.id}
@@ -647,4 +711,24 @@ function ProfileRow({
 /** Thin divider line */
 function Divider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 8px' }} />
+}
+
+/** Flower icon for Her Journey */
+function FireflyIcon({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      {/* 6 petals */}
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" fill="currentColor" opacity="0.55" />
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" transform="rotate(60 12 12)" fill="currentColor" opacity="0.55" />
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" transform="rotate(120 12 12)" fill="currentColor" opacity="0.55" />
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" transform="rotate(180 12 12)" fill="currentColor" opacity="0.55" />
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" transform="rotate(240 12 12)" fill="currentColor" opacity="0.55" />
+      <ellipse cx="12" cy="6.5" rx="2" ry="3.5" transform="rotate(300 12 12)" fill="currentColor" opacity="0.55" />
+      {/* Glowing centre */}
+      <circle cx="12" cy="12" r="3" fill="#c0f18e" opacity="0.9">
+        <animate attributeName="opacity" values="0.7;1;0.7" dur="2.2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="12" cy="12" r="1.6" fill="#fff" opacity="0.55" />
+    </svg>
+  )
 }

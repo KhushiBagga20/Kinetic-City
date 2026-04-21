@@ -100,6 +100,7 @@ interface AppState {
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   isAuthenticated: boolean
+  isAuthLoading: boolean
   signOut: () => void
 
   // ── Portfolio Setup ────────────────────────────────────────────────────────
@@ -233,6 +234,26 @@ interface AppState {
   watchlist: string[]
   toggleWatchlist: (symbol: string) => void
 
+  // ── Women's Journey ────────────────────────────────────────────────────────
+  userGender: 'female' | 'male' | 'other' | null
+  lifeStage: 'student' | 'working_single' | 'newly_married' |
+             'planning_family' | 'career_break' | 'returning_work' |
+             'single_income' | 'financial_reset' | 'pre_retirement' | null
+  setUserGender: (g: 'female' | 'male' | 'other') => void
+  setLifeStage: (s: string) => void
+
+  // ── SHG Circle ─────────────────────────────────────────────────────────────
+  circleId: string | null
+  circleName: string | null
+  circleMembers: { name: string; modulesCompleted: number; streak: number }[]
+  setCircle: (id: string, name: string) => void
+
+  // ── Voucher / rewards ──────────────────────────────────────────────────────
+  voucherPoints: number
+  addVoucherPoints: (n: number) => void
+  pendingVoucher: { amount: number; partner: string } | null
+  setPendingVoucher: (v: { amount: number; partner: string } | null) => void
+
   // ── Reset ─────────────────────────────────────────────────────────────────
   reset: () => void
 }
@@ -243,6 +264,9 @@ interface AppState {
 if (typeof window !== 'undefined') {
   localStorage.removeItem('kinetic-app-state')
 }
+
+// Dev helper: expose store for console testing (e.g. window.__KINETIC_STORE.getState().setUserGender('female'))
+// Assigned after store creation below
 
 export const useAppStore = create<AppState>()(
   (set, get) => ({
@@ -274,6 +298,7 @@ export const useAppStore = create<AppState>()(
 
       // ── Auth ─────────────────────────────────────────────────────────────────
       isAuthenticated: false,
+      isAuthLoading: true,
       signOut: () => set({ userEmail: '', userId: '', isAuthenticated: false }),
 
       // ── Portfolio Setup ──────────────────────────────────────────────────────
@@ -472,6 +497,24 @@ export const useAppStore = create<AppState>()(
         set({ watchlist: current.includes(symbol) ? current.filter(s => s !== symbol) : [...current, symbol] })
       },
 
+      // ── Women's Journey ──────────────────────────────────────────────────────
+      userGender: null,
+      lifeStage: null,
+      setUserGender: (userGender) => set({ userGender }),
+      setLifeStage: (lifeStage) => set({ lifeStage: lifeStage as any }),
+
+      // ── SHG Circle ────────────────────────────────────────────────────────────
+      circleId: null,
+      circleName: null,
+      circleMembers: [],
+      setCircle: (circleId, circleName) => set({ circleId, circleName }),
+
+      // ── Voucher / rewards ─────────────────────────────────────────────────────
+      voucherPoints: 0,
+      addVoucherPoints: (n) => set(s => ({ voucherPoints: s.voucherPoints + n })),
+      pendingVoucher: null,
+      setPendingVoucher: (pendingVoucher) => set({ pendingVoucher }),
+
       // ── Reset ───────────────────────────────────────────────────────────────
       reset: () => set({
         view: 'landing', step: 0, fearType: null, userName: '', fearProgress: 0,
@@ -514,6 +557,10 @@ export const useAppStore = create<AppState>()(
     })
 )
 
+// Dev: expose store on window for console testing
+if (typeof window !== 'undefined') {
+  (window as any).__KINETIC_STORE = useAppStore
+}
 
 // ── Firebase Sync Sync ───────────────────────────────────────────────────────
 if (isFirebaseConfigured && auth && db) {
@@ -525,9 +572,18 @@ if (isFirebaseConfigured && auth && db) {
       const docSnap = await getDoc(docRef)
       if (docSnap.exists()) {
         const data = docSnap.data()
+        // Skip Firestore hydration of hasCompletedOnboarding for users in a
+        // fresh signup flow (isNewUser=true was set before the auth call).
+        // This prevents Firebase IndexedDB cache from hiding the onboarding.
+        const isSigningUp = useAppStore.getState().isNewUser
         // Hydrate the store with remote data (merging over defaults)
         useAppStore.setState({
+          isAuthLoading: false,
           isAuthenticated: true,
+          ...(data.hasCompletedOnboarding === true && !isSigningUp ? {
+            isNewUser: false,
+            hasCompletedOnboarding: true,
+          } : {}),
           userId: user.uid,
           userEmail: user.email || '',
           userName: data.userName || '',
@@ -541,12 +597,12 @@ if (isFirebaseConfigured && auth && db) {
         })
       } else {
         // First login, they have no doc yet (handled in SignUp)
-        useAppStore.setState({ isAuthenticated: true, userId: user.uid, userEmail: user.email || '' })
+        useAppStore.setState({ isAuthLoading: false, isAuthenticated: true, userId: user.uid, userEmail: user.email || '' })
       }
     } else {
       // User logged out
       useAppStore.getState().reset()
-      useAppStore.setState({ isAuthenticated: false, userId: '', userEmail: '' })
+      useAppStore.setState({ isAuthLoading: false, isAuthenticated: false, userId: '', userEmail: '' })
     }
   })
 
@@ -564,7 +620,8 @@ if (isFirebaseConfigured && auth && db) {
       state.fearProgress !== prevState.fearProgress ||
       state.completedModules.length !== prevState.completedModules.length ||
       state.streakDays !== prevState.streakDays ||
-      state.cryptoEnabled !== prevState.cryptoEnabled;
+      state.cryptoEnabled !== prevState.cryptoEnabled ||
+      state.hasCompletedOnboarding !== prevState.hasCompletedOnboarding;
 
     if (criticalFieldsChanged) {
       const docRef = doc(db, 'users', state.userId)
@@ -578,6 +635,7 @@ if (isFirebaseConfigured && auth && db) {
         streakDays: state.streakDays,
         cryptoEnabled: state.cryptoEnabled,
         userName: state.userName,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
         lastSync: new Date().toISOString()
       }, { merge: true }).catch(err => {
         console.error('Failed to sync state to Firebase:', err)

@@ -5,6 +5,8 @@ import { formatINR } from '../../../lib/formatINR'
 import { getNiftyFromYear } from '../../../lib/niftyData'
 import { generateInstinctDebrief } from '../../../lib/simulateAI'
 import { CRASH_HISTORY, type CrashEvent } from '../../../lib/crashData'
+import KinuInsight from '../shared/KinuInsight'
+import { kinuRegistry } from '../../../lib/kinuActionRegistry'
 import {
   ArrowRight, Clock, TrendingDown, TrendingUp,
   RotateCcw, Zap, Shield, AlertTriangle,
@@ -348,6 +350,12 @@ export default function TimeMachinePage() {
     runSimulation()
   }
 
+  // Register KINU action so floating chat can start the simulation
+  useEffect(() => {
+    kinuRegistry.register('run_time_machine', handleStart)
+    return () => kinuRegistry.unregister('run_time_machine')
+  }) // no deps — handleStart captures latest state each render
+
   const handleCrashDecision = (stayOrWithdraw: 'stay' | 'withdraw') => {
     const resume = (window as any).__tmResume
     if (!resume) return
@@ -474,6 +482,14 @@ export default function TimeMachinePage() {
                 </div>
               </div>
             </div>
+
+            {/* KINU pre-simulation insight */}
+            <KinuInsight
+              page="time-machine"
+              extraContext={`User is about to start a Time Machine simulation: ₹${monthlyAmount}/month from ${startYear} to ${simEndYear} (${totalYears} years). Behavioral stress test: ${panicMode ? 'ON' : 'OFF'}.`}
+              ctaSection="learn"
+              ctaLabel="Learn about crashes"
+            />
 
             <button onClick={handleStart}
               className="w-full py-4 rounded-full font-sans font-bold text-sm text-[#0a1a00] box-glow active:scale-[0.97] transition-transform duration-200 flex items-center justify-center gap-3"

@@ -217,15 +217,15 @@ export default function FearProfiler() {
             className="block mx-auto max-w-sm mb-8"
           >
             <div
-              className="rounded-3xl px-8 py-6 border text-center"
+              className="rounded-3xl px-8 py-6 border text-center overflow-hidden"
               style={{
                 background: profile.bg,
                 borderColor: `${profile.color}30`,
               }}
             >
               <h1
-                className="font-display font-bold tracking-tight leading-none text-center w-full"
-                style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', color: profile.color }}
+                className="font-display font-bold tracking-tight leading-tight text-center w-full"
+                style={{ fontSize: 'clamp(1.75rem, 6vw, 3rem)', color: profile.color, wordBreak: 'break-word', overflowWrap: 'break-word' }}
               >
                 {profile.name}
               </h1>

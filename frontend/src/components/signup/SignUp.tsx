@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import { postCreateUser } from '../../lib/api'
 import { isFirebaseConfigured } from '../../lib/firebase'
+import { scheduleOnboarding } from '../../lib/onboardingSignal'
 
 // ── Personalized headlines per fear type ──────────────────────────────────────
 
@@ -41,6 +42,7 @@ interface SignUpProps {
 export default function SignUp({ onComplete }: SignUpProps) {
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const setUserProfile = useAppStore(s => s.setUserProfile)
+  const setUserGender = useAppStore(s => s.setUserGender)
   const setUserAge = useAppStore(s => s.setUserAge)
   const setSipSetupDate = useAppStore(s => s.setSipSetupDate)
   const resetForNewUser = useAppStore(s => s.resetForNewUser)
@@ -48,6 +50,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
 
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
+  const [gender, setGender] = useState<'female' | 'male' | 'other' | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -60,6 +63,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
 
   const isValid = name.trim().length > 0
     && age.trim().length > 0 && Number(age) >= 18 && Number(age) <= 80
+    && gender !== null
     && email.trim().length > 0
     && password.length >= 8
 
@@ -73,6 +77,9 @@ export default function SignUp({ onComplete }: SignUpProps) {
     setGoogleLoading(true)
     setError('')
     try {
+      // Flag BEFORE the auth call so onAuthStateChanged sees it and skips
+      // Firestore hydration of hasCompletedOnboarding (Firebase IndexedDB cache)
+      useAppStore.setState({ isNewUser: true, hasCompletedOnboarding: false })
       const { signInWithGoogle } = await import('../../lib/firebase')
       const user = await signInWithGoogle()
       const savedFearType = useAppStore.getState().fearType
@@ -83,14 +90,18 @@ export default function SignUp({ onComplete }: SignUpProps) {
       }
       const displayName = user.displayName || 'Investor'
       setUserProfile(displayName, user.email || '', '')
+      if (gender) setUserGender(gender)
       useAppStore.setState({
         isAuthenticated: true,
         userId: user.uid,
         userEmail: user.email || '',
         userName: displayName,
+        isNewUser: true,
+        hasCompletedOnboarding: false,
       })
       setSipSetupDate(new Date().toISOString().split('T')[0])
       updateStreak()
+      scheduleOnboarding()
       onComplete()
     } catch (err: any) {
       setGoogleLoading(false)
@@ -126,6 +137,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
     // Set new user data
     setUserProfile(trimmedName, trimmedEmail, '')
     setUserAge(userAge)
+    if (gender) setUserGender(gender)
     setSipSetupDate(new Date().toISOString().split('T')[0])
 
     // FIREBASE SYNC OVERRIDE ───────────────────────────────────────────────
@@ -136,6 +148,9 @@ export default function SignUp({ onComplete }: SignUpProps) {
         const { createUserWithEmailAndPassword } = await import('firebase/auth')
         const { doc, setDoc } = await import('firebase/firestore')
         
+        // Flag BEFORE auth call — onAuthStateChanged checks isNewUser to decide
+        // whether to skip Firestore hydration of hasCompletedOnboarding.
+        useAppStore.setState({ isNewUser: true, hasCompletedOnboarding: false })
         const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, password)
         const user = userCredential.user
 
@@ -143,14 +158,16 @@ export default function SignUp({ onComplete }: SignUpProps) {
         await setDoc(doc(db, 'users', user.uid), {
           userName: trimmedName,
           userAge: userAge,
+          userGender: gender,
           fearType: savedFearType ?? 'loss',
           metaphorStyle: savedMetaphor ?? 'generic',
           createdAt: new Date().toISOString()
         })
         
-        useAppStore.setState({ userId: user.uid, isAuthenticated: true })
+        useAppStore.setState({ userId: user.uid, isAuthenticated: true, isNewUser: true, hasCompletedOnboarding: false })
         updateStreak()
         await new Promise(resolve => setTimeout(resolve, 400))
+        scheduleOnboarding()
         onComplete()
         return
       } catch (err: any) {
@@ -179,9 +196,12 @@ export default function SignUp({ onComplete }: SignUpProps) {
       useAppStore.setState({
         userId: 'local_' + Math.random().toString(36).substring(2, 10),
         isAuthenticated: true,
+        isNewUser: true,
       })
     }
 
+    sessionStorage.removeItem('kinu_show_onboarding')
+    scheduleOnboarding()
     updateStreak()
     await new Promise(resolve => setTimeout(resolve, 400))
     onComplete()
@@ -196,6 +216,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
       userId: 'guest_' + gid,
     })
     updateStreak()
+    scheduleOnboarding()
 
     setTimeout(() => {
       onComplete()
@@ -205,8 +226,9 @@ export default function SignUp({ onComplete }: SignUpProps) {
   const fields = [
     { key: 'name', delay: 0.26 },
     { key: 'age', delay: 0.30 },
-    { key: 'email', delay: 0.34 },
-    { key: 'password', delay: 0.38 },
+    { key: 'gender', delay: 0.34 },
+    { key: 'email', delay: 0.38 },
+    { key: 'password', delay: 0.42 },
   ]
 
   return (
@@ -346,11 +368,39 @@ export default function SignUp({ onComplete }: SignUpProps) {
             />
           </motion.div>
 
-          {/* Email field */}
+          {/* Gender selection */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: fields[2].delay, ease: 'easeOut' }}
+          >
+            <p className="font-sans text-[11px] text-white/30 mb-2.5 pl-1">I identify as</p>
+            <div className="flex gap-2">
+              {([['female', '♀ Female'], ['male', '♂ Male'], ['other', 'Other']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setGender(val)}
+                  className="flex-1 py-3 rounded-2xl font-sans text-sm font-medium transition-all duration-200"
+                  style={{
+                    background: gender === val ? 'rgba(192,241,142,0.12)' : 'rgba(255,255,255,0.04)',
+                    border: gender === val ? '1px solid rgba(192,241,142,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                    color: gender === val ? '#c0f18e' : 'rgba(255,255,255,0.4)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Email field */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: fields[3].delay, ease: 'easeOut' }}
           >
             <input
               type="email"
@@ -366,7 +416,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: fields[3].delay, ease: 'easeOut' }}
+            transition={{ duration: 0.5, delay: fields[4].delay, ease: 'easeOut' }}
             className="relative"
           >
             <input
@@ -400,7 +450,7 @@ export default function SignUp({ onComplete }: SignUpProps) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.42, ease: 'easeOut' }}
+            transition={{ duration: 0.5, delay: 0.48, ease: 'easeOut' }}
           >
             <button
               type="submit"
