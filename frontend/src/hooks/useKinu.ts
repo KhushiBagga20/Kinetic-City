@@ -133,14 +133,14 @@ export function useKinu(initialGreeting: string, actions: KinuActionMap = {}) {
       }
       setMessages(prev => [...prev, assistantMsg])
 
-      // Execute navigation after short delay
+      // Execute navigation after letting the user read the reply
       if (navigate_to) {
-        setTimeout(() => executeNav(navigate_to), 1000)
+        setTimeout(() => executeNav(navigate_to), 2500)
       }
 
       // Execute app action after a slightly longer delay (let message settle)
       if (action) {
-        setTimeout(() => executeAction(action), navigate_to ? 1200 : 600)
+        setTimeout(() => executeAction(action), navigate_to ? 3000 : 1200)
       }
     } catch {
       setMessages(prev => [...prev, {

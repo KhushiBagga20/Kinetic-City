@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../store/useAppStore'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Component, type ReactNode, type ErrorInfo } from 'react'
 import DashboardHome from './DashboardHome'
 import KinuFloatingButton from './shared/KinuFloatingButton'
 import SimulationPage from './pages/SimulationPage'
@@ -26,8 +26,46 @@ import DotGrid from '../shared/DotGrid'
 import {
   LineChart, ChevronDown, ChevronRight, X, User,
   LogOut, LogIn, Fingerprint, CreditCard, Flame, BarChart3, Check, Settings,
-  Home, BookOpen, Zap
+  Home, BookOpen, Zap, Sprout
 } from 'lucide-react'
+
+/* ── Error Boundary — catches runtime crashes and shows the error ─────────── */
+
+interface EBProps { children: ReactNode; section: string }
+interface EBState { hasError: boolean; error: string }
+
+class SectionErrorBoundary extends Component<EBProps, EBState> {
+  state: EBState = { hasError: false, error: '' }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: `${error.name}: ${error.message}` }
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[SectionErrorBoundary]', error, info.componentStack)
+  }
+  componentDidUpdate(prevProps: EBProps) {
+    // Auto-clear when section changes
+    if (prevProps.section !== this.props.section && this.state.hasError) {
+      this.setState({ hasError: false, error: '' })
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, color: '#fff', fontFamily: 'monospace' }}>
+          <h2 style={{ color: '#E24B4A', marginBottom: 12 }}>⚠ Section crashed</h2>
+          <pre style={{ color: '#ff9999', whiteSpace: 'pre-wrap', fontSize: 13, marginBottom: 20 }}>{this.state.error}</pre>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: '' }); window.location.href = '/dashboard/home' }}
+            style={{ padding: '8px 16px', background: '#c0f18e', color: '#00161b', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+          >
+            Go to Home
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 /* ── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -230,6 +268,7 @@ export default function PersonalizedDashboard() {
               )}
             </button>
           )}
+
         </div>
 
         {/* ── Right: Profile avatar (desktop) + Hamburger (mobile) ────── */}
@@ -510,7 +549,7 @@ export default function PersonalizedDashboard() {
                       touchAction: 'manipulation'
                     }}
                   >
-                    <FireflyIcon className="w-5 h-5" />
+                    <Sprout className="w-5 h-5" />
                     <span className="font-sans text-[15px] font-medium">Her Journey</span>
                   </button>
                 )}
@@ -586,17 +625,19 @@ export default function PersonalizedDashboard() {
           ══════════════════════════════════════════════════════════════════ */}
       <main className="relative z-[1] pb-20 md:pb-8 px-5 md:px-8 lg:px-12" style={{ paddingTop: 60 }}>
         <div className="max-w-[1200px] mx-auto py-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={dashboardSection}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              {renderSection()}
-            </motion.div>
-          </AnimatePresence>
+          <SectionErrorBoundary section={dashboardSection}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={dashboardSection}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                {renderSection()}
+              </motion.div>
+            </AnimatePresence>
+          </SectionErrorBoundary>
         </div>
       </main>
 

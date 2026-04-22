@@ -498,10 +498,16 @@ export const useAppStore = create<AppState>()(
       },
 
       // ── Women's Journey ──────────────────────────────────────────────────────
-      userGender: null,
-      lifeStage: null,
-      setUserGender: (userGender) => set({ userGender }),
-      setLifeStage: (lifeStage) => set({ lifeStage: lifeStage as any }),
+      userGender: (typeof window !== 'undefined' ? localStorage.getItem('kinetic-userGender') as any : null) || null,
+      lifeStage: (typeof window !== 'undefined' ? localStorage.getItem('kinetic-lifeStage') as any : null) || null,
+      setUserGender: (userGender) => {
+        if (typeof window !== 'undefined') localStorage.setItem('kinetic-userGender', userGender)
+        set({ userGender })
+      },
+      setLifeStage: (lifeStage) => {
+        if (typeof window !== 'undefined') localStorage.setItem('kinetic-lifeStage', lifeStage)
+        set({ lifeStage: lifeStage as any })
+      },
 
       // ── SHG Circle ────────────────────────────────────────────────────────────
       circleId: null,
@@ -593,7 +599,9 @@ if (isFirebaseConfigured && auth && db) {
           fearProgress: data.fearProgress || 0,
           completedModules: data.completedModules || [],
           streakDays: data.streakDays || 0,
-          cryptoEnabled: data.cryptoEnabled || false
+          cryptoEnabled: data.cryptoEnabled || false,
+          userGender: data.userGender || null,
+          lifeStage: data.lifeStage || null,
         })
       } else {
         // First login, they have no doc yet (handled in SignUp)
@@ -621,7 +629,9 @@ if (isFirebaseConfigured && auth && db) {
       state.completedModules.length !== prevState.completedModules.length ||
       state.streakDays !== prevState.streakDays ||
       state.cryptoEnabled !== prevState.cryptoEnabled ||
-      state.hasCompletedOnboarding !== prevState.hasCompletedOnboarding;
+      state.hasCompletedOnboarding !== prevState.hasCompletedOnboarding ||
+      state.userGender !== prevState.userGender ||
+      state.lifeStage !== prevState.lifeStage;
 
     if (criticalFieldsChanged) {
       const docRef = doc(db, 'users', state.userId)
@@ -636,6 +646,8 @@ if (isFirebaseConfigured && auth && db) {
         cryptoEnabled: state.cryptoEnabled,
         userName: state.userName,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        userGender: state.userGender,
+        lifeStage: state.lifeStage,
         lastSync: new Date().toISOString()
       }, { merge: true }).catch(err => {
         console.error('Failed to sync state to Firebase:', err)

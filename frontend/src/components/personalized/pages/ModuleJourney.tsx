@@ -31,7 +31,6 @@ export default function ModuleJourney() {
       // Guard: if we somehow land here with no module id, go to learn
       setDashboardSection('learn')
       navigate('/dashboard/learn', { replace: true })
-      return
     }
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
     setKinuReaction(null)
@@ -43,6 +42,7 @@ export default function ModuleJourney() {
     if (!showCelebration) return
     const t = setTimeout(() => {
       setShowCelebration(false)
+      useAppStore.getState().setActiveModuleId(null)
       setDashboardSection('learn')
       navigate('/dashboard/learn')
     }, 2500)
@@ -51,8 +51,13 @@ export default function ModuleJourney() {
 
   const activeModuleIndex = track.findIndex(m => m.id === activeModuleId)
 
-  // Render nothing only if both store and URL are still catching up — prevents flash
-  if (!activeModuleId) return null
+  // While activeModuleId is being cleared (e.g. browser back), show nothing
+  // but do NOT return null — the useEffect above will navigate away, avoiding a blank screen.
+  if (!activeModuleId) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-[#00f2fe] animate-spin" />
+    </div>
+  )
 
   const currentModule = track[activeModuleIndex]
   const contentModule = contentModules.find(m => m.id === activeModuleId)
@@ -62,6 +67,7 @@ export default function ModuleJourney() {
 
   // Helper: navigate to learn page and sync store atomically
   const goToLearn = useCallback(() => {
+    useAppStore.getState().setActiveModuleId(null)
     setDashboardSection('learn')
     navigate('/dashboard/learn')
   }, [navigate, setDashboardSection])

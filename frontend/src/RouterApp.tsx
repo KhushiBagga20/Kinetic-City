@@ -33,16 +33,18 @@ function DashboardRoute() {
 
   const isAuthLoading = useAppStore(s => s.isAuthLoading)
 
-  // Sync URL → Store on every URL change. Always call setDashboardSection so
-  // we never get stuck with a stale Zustand value vs the URL param.
+  // Sync URL → Store on every URL change. Handles browser back/forward correctly.
   useEffect(() => {
     if (moduleId) {
+      // Entering a module page
       setDashboardSection('module-reader')
       if (activeModuleId !== moduleId) setActiveModuleId(moduleId)
     } else if (section) {
+      // Navigating to any named section — always clear the module id
+      setActiveModuleId(null)
       setDashboardSection(section)
-      if (activeModuleId !== null) setActiveModuleId(null)
     } else {
+      // Bare /dashboard — redirect to home
       navigate('/dashboard/home', { replace: true })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

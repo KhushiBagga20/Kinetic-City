@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore, type FearType } from '../../store/useAppStore'
 import FearProgressBar from './shared/FearProgressBar'
 import StreakTracker from './shared/StreakTracker'
@@ -11,7 +12,7 @@ import FearQuote from './shared/FearQuote'
 import KinuInsight from './shared/KinuInsight'
 import MarketNewsFeed from '../news/MarketNewsFeed'
 import NewsTickerBar from '../news/NewsTickerBar'
-import { Zap, ChevronDown, Search, FlaskConical, ArrowUpRight, Sprout, LineChart, Clock, BookOpen, TrendingUp, ArrowRight } from 'lucide-react'
+import { Zap, ChevronDown, Search, FlaskConical, ArrowUpRight, Sprout, LineChart, Clock, BookOpen, TrendingUp, ArrowRight, X, Sparkles } from 'lucide-react'
 import { getTrackForFear } from '../../lib/curriculumData'
 
 /* ── 30 rotating daily quotes ─────────────────────────────────────────────── */
@@ -190,11 +191,13 @@ function getDailyQuote(): string {
 /* ══════════════════════════════════════════════════════════════════════════ */
 
 export default function DashboardHome() {
+  const navigate = useNavigate()
   const fearType = useAppStore(s => s.fearType) ?? 'loss'
   const rawName = useAppStore(s => s.userName)
   const firstName = rawName && rawName !== 'Explorer' ? rawName.split(' ')[0] : ''
   const setDashboardSection = useAppStore(s => s.setDashboardSection)
   const newsItems = useAppStore(s => s.newsItems) || []
+  const userGender = useAppStore(s => s.userGender)
 
   // Next step state
   const portfolioSetup = useAppStore(s => s.portfolioSetup)
@@ -206,6 +209,7 @@ export default function DashboardHome() {
   const [jargonSearch, setJargonSearch] = useState('')
   const [expandedJargon, setExpandedJargon] = useState<string | null>(null)
   const [marketOpen, setMarketOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  const [herJourneyDismissed, setHerJourneyDismissed] = useState(false)
 
   const dailyTerm = DAILY_TERMS[new Date().getDate() % DAILY_TERMS.length]
 
@@ -245,6 +249,93 @@ export default function DashboardHome() {
           <ArrowRight className="w-5 h-5 shrink-0 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style={{ color: 'var(--accent)' }} />
         </div>
       </motion.div>
+
+      {/* ── Her Journey Spotlight — only for female users ──────────────── */}
+      <AnimatePresence>
+        {userGender === 'female' && !herJourneyDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.97 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="relative rounded-3xl p-6 md:p-8 border mb-6 cursor-pointer group overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 35%, #1e3a2f 70%, #0a2a1a 100%)',
+              borderColor: 'rgba(200, 160, 255, 0.2)',
+            }}
+            onClick={() => { navigate('/dashboard/her-journey'); setDashboardSection('her-journey') }}
+            whileHover={{ borderColor: 'rgba(200, 160, 255, 0.4)', boxShadow: '0 8px 40px rgba(200, 160, 255, 0.12)' }}
+            whileTap={{ scale: 0.99 }}
+          >
+            {/* Animated sparkle decorations */}
+            <motion.div
+              className="absolute top-4 right-12"
+              animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.1, 0.9], rotate: [0, 15, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: 'rgba(200, 160, 255, 0.5)' }} />
+            </motion.div>
+            <motion.div
+              className="absolute bottom-6 right-8"
+              animate={{ opacity: [0.2, 0.6, 0.2], scale: [1, 1.2, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+            >
+              <Sparkles className="w-4 h-4" style={{ color: 'rgba(192, 241, 142, 0.4)' }} />
+            </motion.div>
+            <motion.div
+              className="absolute top-1/2 right-1/4"
+              animate={{ opacity: [0.15, 0.4, 0.15] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+            >
+              <Sparkles className="w-3 h-3" style={{ color: 'rgba(255, 200, 220, 0.4)' }} />
+            </motion.div>
+
+            {/* Dismiss button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setHerJourneyDismissed(true) }}
+              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 z-10"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)' }}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Content */}
+            <div className="relative z-[1]">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(200, 160, 255, 0.15)' }}>
+                  <Sprout className="w-4 h-4" style={{ color: '#c8a0ff' }} />
+                </div>
+                <p className="text-[11px] uppercase tracking-widest font-sans font-medium" style={{ color: '#c8a0ff' }}>
+                  Made for you ✨
+                </p>
+              </div>
+
+              <h3 className="font-display font-bold text-white text-[20px] md:text-[22px] leading-snug mb-2">
+                Discover Her Journey
+              </h3>
+              <p className="font-sans text-[13px] leading-relaxed max-w-lg" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                We built something special for you — career break planners, salary gap simulators, 
+                legendary women investor portfolios, and a community of women investors. All in one place.
+              </p>
+
+              <div className="flex items-center gap-2 mt-4">
+                <span className="font-sans text-[13px] font-medium group-hover:translate-x-1 transition-transform duration-300" style={{ color: '#c8a0ff' }}>
+                  Explore now
+                </span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" style={{ color: '#c8a0ff' }} />
+              </div>
+            </div>
+
+            {/* Glow orb */}
+            <div
+              className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(200,160,255,0.12) 0%, transparent 70%)' }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* KINU Dashboard Insight */}
       <div className="mb-6">
